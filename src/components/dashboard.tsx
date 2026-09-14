@@ -76,7 +76,7 @@ export function Dashboard() {
   const [mentorResponses, setMentorResponses] = useState<Record<string, MentorResponse>>({});
   const [studentSearch, setStudentSearch] = useState("");
   const [meeting, setMeeting] = useState("Sep 16, 2026");
-  const [program, setProgram] = useState("B-SMART + BMINDS");
+  const [program, setProgram] = useState("");
   const [workstream, setWorkstream] = useState<"All workstreams" | Workstream>("All workstreams");
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -90,7 +90,7 @@ export function Dashboard() {
     return `${student.name} ${student.leadershipRole} ${student.primaryWorkstream} ${student.programAffiliation} ${student.currentFocus} ${updateText}`.toLowerCase().includes(studentSearch.toLowerCase());
   };
   const matchesFilters = (student: Student) => {
-    const matchesProgram = program === "B-SMART + BMINDS" || student.programAffiliation === program;
+    const matchesProgram = !program || student.programAffiliation === program;
     const matchesWorkstream = workstream === "All workstreams" || student.primaryWorkstream === workstream;
     return matchesProgram && matchesWorkstream;
   };
@@ -125,7 +125,7 @@ export function Dashboard() {
   return <main className="page-frame dashboard-page">
     <div className="page-intro dashboard-intro"><p className="eyebrow">SMART-MINDS Weekly Hub</p><h1>Wednesday Meeting Review</h1><p className="page-description">Review student contributions and questions for Sep 16, 2026</p></div>
 
-    <div className="review-filters"><label><span>Meeting</span><select value={meeting} onChange={(event) => setMeeting(event.target.value)}><option>Sep 16, 2026</option><option>All meetings</option></select></label><label><span>Program</span><select value={program} onChange={(event) => setProgram(event.target.value)}><option>B-SMART + BMINDS</option><option>B-SMART</option><option>BMINDS</option><option>SMART-MINDS</option></select></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as "All workstreams" | Workstream)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+    <div className="review-filters"><label><span>Meeting</span><select value={meeting} onChange={(event) => setMeeting(event.target.value)}><option>Sep 16, 2026</option><option>All meetings</option></select></label><label><span>Program</span><select value={program} onChange={(event) => setProgram(event.target.value)}><option value="" hidden>All programs</option><option>B-SMART</option><option>BMINDS</option><option>SMART-MINDS</option></select></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as "All workstreams" | Workstream)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label></div>
     <label className="student-search"><Search size={16} /><span className="sr-only">Search students or contributions</span><input type="search" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search students or contributions..." /></label>
 
     <div className="review-summary" aria-label="Meeting review summary"><div><strong>{attentionUpdates.length}</strong><span>Needs response</span></div><div><strong>3</strong><span>Missing updates</span></div><div><strong>14 of 17</strong><span>Submitted</span></div></div>
