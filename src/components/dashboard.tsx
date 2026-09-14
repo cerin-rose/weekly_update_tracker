@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CircleHelp, MessageCircle, Save, Search, X } from "lucide-react";
+import { ArrowRight, MessageCircle, Save, Search, X } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { students, weeklyUpdates } from "@/data/mock-data";
@@ -147,6 +147,5 @@ export function Dashboard() {
     </section>
 
     {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}><div className="detail-heading"><div><p className="section-kicker">Update detail · {studentFor(effectiveUpdate).name}</p><h2 id="update-detail-heading">Wednesday, {formatDate(effectiveUpdate.meetingDate)}</h2></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div><UpdateRecord update={effectiveUpdate} /><MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} /></section>}
-    <p className="dashboard-note"><CircleHelp size={15} /> Search matches student names, contributions, workstreams, and meeting dates.</p>
   </main>;
 }
