@@ -9,8 +9,8 @@ import type { MentorResponse, UpdateStatus, WeeklyUpdate } from "@/types";
 import { StatusBadge } from "@/components/status-badge";
 import { UpdateRecord } from "@/components/update-record";
 
-export function StudentProfile() {
-  const student = getStudent("sofia-nguyen");
+export function StudentProfile({ studentId = "sofia-nguyen" }: { studentId?: string }) {
+  const student = getStudent(studentId);
   const [updates, setUpdates] = useState<WeeklyUpdate[]>(weeklyUpdates.filter((update) => update.studentId === student.id));
   const [mentorResponses, setMentorResponses] = useState<Record<string, MentorResponse>>({});
 
