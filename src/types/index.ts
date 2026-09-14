@@ -6,7 +6,7 @@ export type Workstream =
   | "Outreach"
   | "Communications"
   | "Fundraising"
-  | "Manuscripts"
+  | "Manuscript"
   | "Social Media";
 
 export type UpdateStatus = "on-track" | "question" | "needs-help" | "blocked";
@@ -26,12 +26,14 @@ export interface MentorResponse {
   message: string;
   respondedAt: string;
   resolutionStatus: ResolutionStatus;
+  followUpDate?: string;
 }
 
 export interface WeeklyUpdate {
   id: string;
   studentId: string;
   meetingDate: string;
+  workstream: Workstream;
   completed: string;
   workingOn: string;
   nextSteps: string;

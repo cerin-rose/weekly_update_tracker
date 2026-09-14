@@ -1,9 +1,18 @@
 import { ArrowRight, Check, ExternalLink, HelpCircle, Users } from "lucide-react";
 import type { WeeklyUpdate } from "@/types";
+import { getDisplayStatus } from "@/lib/display-status";
 import { StatusBadge } from "@/components/status-badge";
 
 function updateDate(date: string) {
   return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function submittedDate(date: string) {
+  return new Date(date).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function resolutionLabel(status: "open" | "follow-up-needed" | "resolved") {
+  return { open: "Open", "follow-up-needed": "Follow-up needed", resolved: "Resolved" }[status];
 }
 
 interface UpdateRecordProps {
@@ -18,8 +27,9 @@ export function UpdateRecord({ update, compact = false }: UpdateRecordProps) {
         <div>
           <p className="record-date">{updateDate(update.meetingDate)} · Wednesday meeting</p>
           <h3>{compact ? "Weekly check-in" : "Contribution update"}</h3>
+          {!compact && <p className="record-submitted">Submitted {submittedDate(update.submittedAt)}</p>}
         </div>
-        <StatusBadge status={update.status} />
+         <StatusBadge status={getDisplayStatus(update)} />
       </div>
 
       <div className="update-sections">
@@ -35,13 +45,13 @@ export function UpdateRecord({ update, compact = false }: UpdateRecordProps) {
           <h4><span className="section-icon next"><ArrowRight size={13} /></span>Next steps</h4>
           <p>{update.nextSteps}</p>
         </section>
-        {update.questionForDrLina && <section className="update-section callout-question">
+        {(update.questionForDrLina || !compact) && <section className="update-section callout-question">
           <h4><span className="section-icon question"><HelpCircle size={13} /></span>Question for Dr. Lina</h4>
-          <p>{update.questionForDrLina}</p>
+          <p>{update.questionForDrLina || "No question submitted"}</p>
         </section>}
-        {update.supportNeeded && <section className="update-section callout-support">
+        {(update.supportNeeded || !compact) && <section className="update-section callout-support">
           <h4><span className="section-icon support"><HelpCircle size={13} /></span>Support needed</h4>
-          <p>{update.supportNeeded}</p>
+          <p>{update.supportNeeded || "No support requested"}</p>
         </section>}
       </div>
 
@@ -49,7 +59,7 @@ export function UpdateRecord({ update, compact = false }: UpdateRecordProps) {
         <span className="collaborator-line"><Users size={14} /><strong>Collaborators</strong> {update.collaborators.length ? update.collaborators.join(" · ") : "Working independently"}</span>
         {update.resourceLinks.length > 0 && <span className="resource-line"><ExternalLink size={13} /><strong>Resource links</strong> {update.resourceLinks.join(" · ")}</span>}
       </div>
-      {update.mentorResponse && <div className="mentor-response"><strong>Dr. Lina’s response</strong><span>{update.mentorResponse.message}</span></div>}
+      {update.mentorResponse && <div className="mentor-response"><strong>Dr. Lina’s response · {resolutionLabel(update.mentorResponse.resolutionStatus)}</strong><span>{update.mentorResponse.message}</span>{update.mentorResponse.followUpDate && <small>Follow-up: {update.mentorResponse.followUpDate}</small>}</div>}
     </article>
   );
 }

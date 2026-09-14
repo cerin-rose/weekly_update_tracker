@@ -5,22 +5,20 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
-const navigation = [
-  { href: "/", label: "Dr. Lina’s Home", icon: House },
-  { href: "/submit", label: "Submit Update", icon: PenLine },
-  { href: "/students/sofia-nguyen", label: "Student Profile", icon: UserRound },
-];
-
-function viewFromPath(pathname: string) {
-  if (pathname === "/submit") return "/submit";
-  if (pathname.startsWith("/students")) return "/students/sofia-nguyen";
-  return "/";
-}
-
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const currentView = viewFromPath(pathname);
+  const sofiaView = pathname === "/submit" || pathname.startsWith("/students");
+  const currentView = sofiaView ? (pathname === "/submit" ? "/submit" : "/students/sofia-nguyen") : "/";
+  const navigation = sofiaView
+    ? [
+        { href: "/submit", label: "Submit Update", icon: PenLine },
+        { href: "/students/sofia-nguyen", label: "My History", icon: UserRound },
+      ]
+    : [
+        { href: "/", label: "Meeting Review", icon: House },
+        { href: "/#student-directory", label: "Student Directory", icon: UserRound },
+      ];
 
   return (
     <div className="app-shell">
@@ -34,18 +32,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="topnav" aria-label="Main navigation">
-          {navigation.map(({ href, label, icon: Icon }) => (
-            <Link className={`nav-link ${currentView === href ? "active" : ""}`} href={href} key={href}>
-              <Icon size={15} strokeWidth={1.9} />
-              <span>{label}</span>
-            </Link>
-          ))}
+          {navigation.map(({ href, label, icon: Icon }) => {
+            const content = <><Icon size={15} strokeWidth={1.9} /><span>{label}</span></>;
+            return href.startsWith("/#")
+              ? <a className="nav-link" href={href} key={href}>{content}</a>
+              : <Link className={`nav-link ${currentView === href ? "active" : ""}`} href={href} key={href}>{content}</Link>;
+          })}
         </nav>
 
         <label className="demo-switcher">
           <span>View demo as</span>
           <span className="select-wrap">
-            <select value={currentView === "/students/sofia-nguyen" ? "/students/sofia-nguyen" : currentView} onChange={(event) => router.push(event.target.value)}>
+            <select aria-label="View demo as" value={sofiaView ? "/students/sofia-nguyen" : "/"} onChange={(event) => router.push(event.target.value)}>
               <option value="/">Dr. Lina</option>
               <option value="/students/sofia-nguyen">Sofia</option>
             </select>

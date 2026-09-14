@@ -15,7 +15,8 @@ export function loadStoredUpdates(): WeeklyUpdate[] {
 }
 
 export function saveStoredUpdates(updates: WeeklyUpdate[]) {
-  window.localStorage.setItem(UPDATE_STORAGE_KEY, JSON.stringify(updates));
+  const unique = Array.from(new Map(updates.map((update) => [update.id, update])).values());
+  window.localStorage.setItem(UPDATE_STORAGE_KEY, JSON.stringify(unique));
 }
 
 export function loadMentorResponses(): Record<string, MentorResponse> {
