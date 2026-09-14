@@ -5,12 +5,13 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { students, weeklyUpdates } from "@/data/mock-data";
 import { loadMentorResponses, saveMentorResponses } from "@/lib/update-storage";
-import type { MentorResponse, ResolutionStatus, Student, UpdateStatus, WeeklyUpdate } from "@/types";
+import type { MentorResponse, ResolutionStatus, Student, UpdateStatus, WeeklyUpdate, Workstream } from "@/types";
 import { StatusBadge } from "@/components/status-badge";
 import { UpdateRecord } from "@/components/update-record";
 
-type HomeTab = "response" | "recent" | "students";
+type HomeTab = "response" | "updates" | "students";
 
+const workstreamOptions: Array<"All workstreams" | Workstream> = ["All workstreams", "Research", "Education", "Outreach", "Communications", "Fundraising", "Manuscripts", "Social Media"];
 const resolutionOptions: Array<{ value: ResolutionStatus; label: string }> = [
   { value: "open", label: "Open" },
   { value: "follow-up-needed", label: "Follow-up needed" },
@@ -31,30 +32,23 @@ function studentFor(update: WeeklyUpdate) {
   return students.find((student) => student.id === update.studentId) ?? students[0];
 }
 
-function SummaryItem({ update, response, onView }: { update: WeeklyUpdate; response?: MentorResponse; onView: () => void }) {
+function ReviewRow({ update, response, onView }: { update: WeeklyUpdate; response?: MentorResponse; onView: () => void }) {
   const student = studentFor(update);
   const status = responseStatus(update.status, response);
-  const summary = update.questionForDrLina || update.supportNeeded;
+  const questionOrSupport = update.questionForDrLina || update.supportNeeded || "No question or support request";
 
-  return <article className="summary-item">
-    <div className="summary-identity"><span className="initials-avatar small">{student.initials}</span><div><h3>{student.name}</h3><p>{student.leadershipRole}</p></div></div>
-    <div className="summary-meta"><span>{student.primaryWorkstream}</span><span>{formatDate(update.meetingDate)}</span></div>
-    <p className="summary-text">{summary}</p>
-    <div className="summary-action"><StatusBadge status={status} /><button className="text-button" onClick={onView}>View update <ArrowRight size={14} /></button></div>
-  </article>;
+  return <div className="review-row" role="row">
+    <div className="review-student" role="cell"><span className="initials-avatar small">{student.initials}</span><div><strong>{student.name}</strong><small>{student.leadershipRole}</small></div></div>
+    <div className="review-workstream" role="cell"><strong>{student.primaryWorkstream}</strong><small>{student.programAffiliation}</small></div>
+    <p className="review-completed" role="cell">{update.completed}</p>
+    <p className="review-question" role="cell">{questionOrSupport}</p>
+    <div className="review-status" role="cell"><StatusBadge status={status} /><small>{formatDate(update.meetingDate)}</small></div>
+    <button className="text-button review-view" onClick={onView}>View update <ArrowRight size={14} /></button>
+  </div>;
 }
 
-function RecentItem({ update, response, onView }: { update: WeeklyUpdate; response?: MentorResponse; onView: () => void }) {
-  const student = studentFor(update);
-  return <article className="recent-item">
-    <div className="recent-identity"><span className="initials-avatar small">{student.initials}</span><div><h3>{student.name}</h3><p>{student.leadershipRole} · {student.primaryWorkstream}</p></div></div>
-    <p className="recent-completed">{update.completed}</p>
-    <div className="recent-bottom"><span>{formatDate(update.meetingDate)}</span><StatusBadge status={responseStatus(update.status, response)} /><button className="text-button" onClick={onView}>View update <ArrowRight size={14} /></button></div>
-  </article>;
-}
-
-function StudentItem({ student, onView }: { student: Student; onView: () => void }) {
-  return <article className="all-student-item"><button className="student-name-button" onClick={onView}><span className="initials-avatar small">{student.initials}</span><span><h3>{student.name}</h3><p>{student.leadershipRole}</p></span></button><span className="student-workstream">{student.primaryWorkstream}</span><p className="student-focus-text">{student.currentFocus}</p><button className="text-button" onClick={onView}>View profile <ArrowRight size={14} /></button></article>;
+function DirectoryRow({ student, update, response, onView }: { student: Student; update?: WeeklyUpdate; response?: MentorResponse; onView: () => void }) {
+  return <div className="directory-review-row" role="row"><button className="student-name-button" onClick={onView}><span className="initials-avatar small">{student.initials}</span><span><strong>{student.name}</strong><small>{student.leadershipRole}</small></span></button><span className="directory-role">{student.primaryWorkstream}</span><p>{student.currentFocus}</p>{update && <StatusBadge status={responseStatus(update.status, response)} />}<button className="text-button" onClick={onView}>View profile <ArrowRight size={14} /></button></div>;
 }
 
 function MentorResponseEditor({ update, existing, onSave }: { update: WeeklyUpdate; existing?: MentorResponse; onSave: (response: MentorResponse) => void }) {
@@ -81,6 +75,9 @@ export function Dashboard() {
   const [selectedUpdateId, setSelectedUpdateId] = useState<string | null>(null);
   const [mentorResponses, setMentorResponses] = useState<Record<string, MentorResponse>>({});
   const [studentSearch, setStudentSearch] = useState("");
+  const [meeting, setMeeting] = useState("Sep 16, 2026");
+  const [program, setProgram] = useState("B-SMART + BMINDS");
+  const [workstream, setWorkstream] = useState<"All workstreams" | Workstream>("All workstreams");
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
@@ -88,20 +85,25 @@ export function Dashboard() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  const matchesSearch = (student: Student) => {
-    const studentDates = weeklyUpdates.filter((update) => update.studentId === student.id).map((update) => `${update.meetingDate} ${formatDate(update.meetingDate)}`).join(" ");
-    return `${student.name} ${student.leadershipRole} ${student.primaryWorkstream} ${student.programAffiliation} ${studentDates}`.toLowerCase().includes(studentSearch.toLowerCase());
+  const matchesSearch = (student: Student, update?: WeeklyUpdate) => {
+    const updateText = update ? `${update.completed} ${update.workingOn} ${update.nextSteps} ${update.questionForDrLina} ${update.supportNeeded} ${update.meetingDate} ${formatDate(update.meetingDate)}` : weeklyUpdates.filter((item) => item.studentId === student.id).map((item) => `${item.meetingDate} ${formatDate(item.meetingDate)}`).join(" ");
+    return `${student.name} ${student.leadershipRole} ${student.primaryWorkstream} ${student.programAffiliation} ${student.currentFocus} ${updateText}`.toLowerCase().includes(studentSearch.toLowerCase());
   };
-  const attentionUpdates = weeklyUpdates.filter((update) => (update.questionForDrLina || update.supportNeeded || update.status === "blocked") && mentorResponses[update.id]?.resolutionStatus !== "resolved" && matchesSearch(studentFor(update))).sort((a, b) => (a.studentId === "sofia-nguyen" ? -1 : b.studentId === "sofia-nguyen" ? 1 : 0));
-  const recentUpdates = weeklyUpdates.slice(0, 4).filter((update) => matchesSearch(studentFor(update)));
-  const visibleStudents = students.filter(matchesSearch);
+  const matchesFilters = (student: Student) => {
+    const matchesProgram = program === "B-SMART + BMINDS" || student.programAffiliation === program;
+    const matchesWorkstream = workstream === "All workstreams" || student.primaryWorkstream === workstream;
+    return matchesProgram && matchesWorkstream;
+  };
+  const filteredUpdates = weeklyUpdates.filter((update) => { const student = studentFor(update); return matchesFilters(student) && matchesSearch(student, update); });
+  const attentionUpdates = filteredUpdates.filter((update) => (update.questionForDrLina || update.supportNeeded || update.status === "blocked") && mentorResponses[update.id]?.resolutionStatus !== "resolved").sort((a, b) => (a.studentId === "sofia-nguyen" ? -1 : b.studentId === "sofia-nguyen" ? 1 : 0));
+  const recentUpdates = filteredUpdates.slice(0, 4);
+  const visibleStudents = students.filter((student) => matchesFilters(student) && matchesSearch(student));
   const selectedUpdate = weeklyUpdates.find((update) => update.id === selectedUpdateId);
   const selectedResponse = selectedUpdate ? mentorResponses[selectedUpdate.id] ?? selectedUpdate.mentorResponse : undefined;
   const effectiveUpdate = selectedUpdate ? { ...selectedUpdate, status: responseStatus(selectedUpdate.status, selectedResponse), mentorResponse: selectedResponse } : undefined;
 
   function showUpdate(updateId: string) {
     setSelectedUpdateId(updateId);
-    setActiveTab("response");
     window.setTimeout(() => document.getElementById("update-detail")?.focus(), 0);
   }
 
@@ -110,8 +112,7 @@ export function Dashboard() {
     if (direction < 0) return;
     event.preventDefault();
     const nextIndex = direction === 2 ? 2 : direction === 0 ? 0 : (index + direction + 3) % 3;
-    const nextTab = (["response", "recent", "students"] as HomeTab[])[nextIndex];
-    setActiveTab(nextTab);
+    setActiveTab((["response", "updates", "students"] as HomeTab[])[nextIndex]);
     tabRefs.current[nextIndex]?.focus();
   }
 
@@ -122,33 +123,30 @@ export function Dashboard() {
   }
 
   return <main className="page-frame dashboard-page">
-    <div className="page-intro dashboard-intro"><p className="eyebrow">SMART-MINDS Weekly Hub</p><h1>Good morning, Dr. Lina</h1><p className="meeting-line">Next meeting · Wednesday, September 16, 2026</p></div>
+    <div className="page-intro dashboard-intro"><p className="eyebrow">SMART-MINDS Weekly Hub</p><h1>Wednesday Meeting Review</h1><p className="page-description">Review student contributions and questions for Sep 16, 2026</p></div>
 
-    <div className="hub-tabs" role="tablist" aria-label="Weekly hub views">
-      {[{ id: "response" as const, label: "Needs attention" }, { id: "recent" as const, label: "Recent updates" }, { id: "students" as const, label: "All students" }].map((tab, index) => <button key={tab.id} ref={(element) => { tabRefs.current[index] = element; }} id={`tab-${tab.id}`} className={activeTab === tab.id ? "active" : ""} role="tab" aria-selected={activeTab === tab.id} aria-controls={`panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} onClick={() => setActiveTab(tab.id)} onKeyDown={(event) => handleTabKey(event, index)}>{tab.label}{tab.id === "response" && <span className="tab-count">{attentionUpdates.length}</span>}</button>)}
+    <div className="review-filters"><label><span>Meeting</span><select value={meeting} onChange={(event) => setMeeting(event.target.value)}><option>Sep 16, 2026</option><option>All meetings</option></select></label><label><span>Program</span><select value={program} onChange={(event) => setProgram(event.target.value)}><option>B-SMART + BMINDS</option><option>B-SMART</option><option>BMINDS</option><option>SMART-MINDS</option></select></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as "All workstreams" | Workstream)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+    <label className="student-search"><Search size={16} /><span className="sr-only">Search students or contributions</span><input type="search" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search students or contributions..." /></label>
+
+    <div className="review-summary" aria-label="Meeting review summary"><div><strong>{attentionUpdates.length}</strong><span>Needs response</span></div><div><strong>3</strong><span>Missing updates</span></div><div><strong>14 of 17</strong><span>Submitted</span></div></div>
+
+    <div className="hub-tabs" role="tablist" aria-label="Meeting review views">
+      {[{ id: "response" as const, label: "Needs response" }, { id: "updates" as const, label: "All updates" }, { id: "students" as const, label: "Student directory" }].map((tab, index) => <button key={tab.id} ref={(element) => { tabRefs.current[index] = element; }} id={`tab-${tab.id}`} className={activeTab === tab.id ? "active" : ""} role="tab" aria-selected={activeTab === tab.id} aria-controls={`panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} onClick={() => setActiveTab(tab.id)} onKeyDown={(event) => handleTabKey(event, index)}>{tab.label}{tab.id === "response" && <span className="tab-count">{attentionUpdates.length}</span>}</button>)}
     </div>
-    <label className="student-search"><Search size={16} /><span className="sr-only">Search students or dates</span><input type="search" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search students, workstreams, or dates" /></label>
 
-    <section id="panel-response" className="hub-panel" role="tabpanel" aria-labelledby="tab-response" hidden={activeTab !== "response"} tabIndex={0}>
-      <div className="summary-list">{attentionUpdates.length ? attentionUpdates.map((update) => <SummaryItem key={update.id} update={update} response={mentorResponses[update.id]} onView={() => showUpdate(update.id)} />) : <p className="empty-state">No student questions match your search.</p>}</div>
+    <section id="panel-response" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-response" hidden={activeTab !== "response"} tabIndex={0}>
+      <div className="review-table" role="table" aria-label="Students needing a response"><div className="review-table-header" role="row"><span>Student</span><span>Role / team</span><span>Completed</span><span>Question / support</span><span>Status</span><span /></div>{attentionUpdates.length ? attentionUpdates.map((update) => <ReviewRow key={update.id} update={update} response={mentorResponses[update.id]} onView={() => showUpdate(update.id)} />) : <p className="empty-state">No student questions match these filters.</p>}</div>
     </section>
 
-    <section id="panel-recent" className="hub-panel" role="tabpanel" aria-labelledby="tab-recent" hidden={activeTab !== "recent"} tabIndex={0}>
-      <div className="panel-intro"><div><p className="section-kicker">Recent updates</p><h2>What the team recently completed</h2></div><p>Latest Wednesday check-ins.</p></div>
-      <div className="recent-list">{recentUpdates.length ? recentUpdates.map((update) => <RecentItem key={update.id} update={update} response={mentorResponses[update.id]} onView={() => showUpdate(update.id)} />) : <p className="empty-state">No recent updates match your search.</p>}</div>
+    <section id="panel-updates" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-updates" hidden={activeTab !== "updates"} tabIndex={0}>
+      <div className="review-table" role="table" aria-label="All student updates"><div className="review-table-header" role="row"><span>Student</span><span>Role / team</span><span>Completed</span><span>Question / support</span><span>Status</span><span /></div>{recentUpdates.length ? recentUpdates.map((update) => <ReviewRow key={update.id} update={update} response={mentorResponses[update.id]} onView={() => showUpdate(update.id)} />) : <p className="empty-state">No updates match these filters.</p>}</div>
     </section>
 
-    <section id="panel-students" className="hub-panel" role="tabpanel" aria-labelledby="tab-students" hidden={activeTab !== "students"} tabIndex={0}>
-      <div className="panel-intro"><div><p className="section-kicker">All students</p><h2>Six student leaders</h2></div><p>Every contribution has a place to grow.</p></div>
-      <div className="all-students-grid">{visibleStudents.length ? visibleStudents.map((student) => <StudentItem key={student.id} student={student} onView={() => router.push(`/students/${student.id}`)} />) : <p className="empty-state">No students match your search.</p>}</div>
+    <section id="panel-students" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-students" hidden={activeTab !== "students"} tabIndex={0}>
+      <div className="directory-table" role="table" aria-label="Student directory"><div className="directory-table-header" role="row"><span>Student</span><span>Primary workstream</span><span>Current focus</span><span>Status</span><span /></div>{visibleStudents.length ? visibleStudents.map((student) => { const update = weeklyUpdates.find((item) => item.studentId === student.id); return <DirectoryRow key={student.id} student={student} update={update} response={update ? mentorResponses[update.id] : undefined} onView={() => router.push(`/students/${student.id}`)} />; }) : <p className="empty-state">No students match your search.</p>}</div>
     </section>
 
-    {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}>
-      <div className="detail-heading"><div><p className="section-kicker">Update detail · {studentFor(effectiveUpdate).name}</p><h2 id="update-detail-heading">Wednesday, {formatDate(effectiveUpdate.meetingDate)}</h2></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div>
-      <UpdateRecord update={effectiveUpdate} />
-      <MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} />
-    </section>}
-
-    <p className="dashboard-note"><CircleHelp size={15} /> Questions and support needs are intentionally kept visible, not buried in a dashboard.</p>
+    {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}><div className="detail-heading"><div><p className="section-kicker">Update detail · {studentFor(effectiveUpdate).name}</p><h2 id="update-detail-heading">Wednesday, {formatDate(effectiveUpdate.meetingDate)}</h2></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div><UpdateRecord update={effectiveUpdate} /><MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} /></section>}
+    <p className="dashboard-note"><CircleHelp size={15} /> Search matches student names, contributions, workstreams, and meeting dates.</p>
   </main>;
 }
