@@ -2,80 +2,84 @@
 
 ## Project Overview
 
-SMART-MINDS Weekly Hub is a frontend-only weekly contribution and mentoring demo for Dr. Lina and six fictional student leaders. It allows Dr. Lina to review weekly submissions, identify missing updates, and respond to student questions. Sofia can submit updates and review her contribution history.
+SMART-MINDS Weekly Hub is a frontend prototype for weekly contribution tracking and mentoring. It gives Dr. Lina a focused way to review student updates, identify questions or blockers, and respond. Students can submit weekly updates and review their contribution history.
+
+The current demo uses six fictional student leaders, typed mock data, and browser localStorage. It is deployed through Vercel as a workflow and visual prototype.
 
 ## Visual Design
 
 ### Colors
 
-- Page background: warm off-white `#f6f5ef`
-- Main surface: soft white `#fffefa`
-- Sage surface: `#edf4ee`
-- Soft neutral surface: `#f3f5ef`
+- Page background: warm ivory `#f7f4ee`
+- Main surface: soft white `#fffdf8`
 - Primary forest green: `#214b3b`
-- Dark forest text: `#18392e`
-- Sage labels and icons: `#6d8a78`
-- Main charcoal text: `#26342f`
-- Secondary muted text: `#728079`
-- Dividers and borders: `#dfe6de`
-- Question and needs-help accent: warm amber `#a46f29` / `#fff4df`
-- Blocked and support accent: muted coral `#b86d61` / soft coral background
+- Dark forest text: `#17372b`
+- Main text: `#292d2b`
+- Neutral supporting text: `#706d66`
+- Sage: `#708576`
+- Sage surface: `#e9efe8`
+- Dividers: `#e4dfd5`
+- Question accent: amber `#9a6828` / `#fff5df`
+- Blocked and support accent: coral `#ae6258` / `#fff0ec`
 
 ### Branding and Layout
 
-- The header logo uses a forest-green sprout icon.
-- The wordmark reads `SMART-MINDS` with `Weekly Hub` below it.
-- The interface uses a clean system sans-serif font.
-- The layout uses generous whitespace, subtle dividers, restrained rounded corners, and minimal shadows.
-- Labels use sentence case instead of excessive uppercase text.
-- The design avoids gradients, charts, decorative dashboards, and unnecessary visual effects.
+- The SMART-MINDS wordmark uses a small forest-green sprout mark as the visual signature.
+- Navigation uses simple text links with a thin forest-green active underline.
+- The interface uses a system sans-serif typeface with a restrained editorial scale.
+- Page titles, names, decisions, and actions use dark forest green for clear hierarchy.
+- Supporting information uses warm neutral gray rather than repeated pale green surfaces.
+- Open layouts, whitespace, and subtle dividers provide most of the structure.
+- Small controls use approximately 6-8px radii. Larger grouped surfaces use approximately 12-14px radii.
+- The design avoids gradients, glassmorphism, decorative dashboards, excessive shadows, and unnecessary icons.
 
 ## Header and Navigation
 
-The header includes:
+The shared header includes:
 
-- SMART-MINDS logo and Weekly Hub label
-- Role-sensitive demo selector
-- Primary navigation
+- SMART-MINDS wordmark and Weekly Hub label
+- Text-based primary navigation
+- Compact `Demo view` selector
 
 ### Dr. Lina View
 
-- `Meeting Review`
-- `Student Directory`
+- `Meeting review`
+- `Student directory`
 
 ### Sofia View
 
-- `Submit Update`
-- `My History`
+- `Submit update`
+- `My history`
 
-On mobile, the logo and demo selector appear in the first row. Navigation appears in a second row with all items reachable and no page-level horizontal overflow.
+Student Directory is a global destination rather than a repeated tab inside Meeting Review. On mobile, the wordmark and demo selector remain in the first row and navigation moves to a second horizontally accessible row.
 
-## Dr. Lina Meeting Review Page
+## Meeting Review
 
-The Home route is presented as `Wednesday Meeting Review`.
+The Home route has one primary purpose: identify which student updates need attention, open an update, and respond.
 
 ### Review Header
 
-- Greeting: `Good morning, Dr. Lina`
-- Page title: `Wednesday Meeting Review`
-- Description explaining that contributions, questions, and support needs can be reviewed for the selected meeting
+- Page title: `Wednesday Review`
+- Subtle meeting metadata such as `Sep 16 · BMINDS`
+- Short description of the review task
 
-### Review Controls
+### Meeting Toolbar
 
-- Compact meeting toolbar with previous and next meeting controls
-- Selected meeting date, team, and workstream controls aligned in one row
-- Team filter: All teams, B-SMART, BMINDS, SMART-MINDS
-- Workstream filter: Research, Education, Outreach, Communications, Fundraising, Manuscript, Social Media
-- Compact student and contribution search utility
-- `Date range` control with From date, To date, Apply, and Clear options
+The toolbar keeps related controls in one compact line:
 
-### Summary Information
+- Previous and next meeting buttons
+- Meeting date selector
+- Team selector
+- Workstream selector
+- Optional date range control
 
-The page displays compact contextual counts below the meeting title:
+The demo opens on the BMINDS team for the Sep 16, 2026 meeting, showing the intended review context.
 
-- Submitted updates for the selected team and meeting
-- Updates needing a response
-- Missing updates
+### Search and Contextual Counts
+
+- Search is a compact utility control aligned to the right.
+- Counts appear as one contextual line rather than equal KPI cards.
+- The initial BMINDS view displays `2/2 submitted · 1 needs response · 0 missing`.
 
 ### Review Tabs
 
@@ -83,59 +87,74 @@ The page displays compact contextual counts below the meeting title:
 - `All updates`
 - `Missing`
 
-The tabs use a simple text treatment with a thin active underline. They are keyboard navigable and horizontally scrollable on small screens. Student Directory remains a global navigation destination rather than a repeated Meeting Review tab.
+Tabs are simple text controls with a thin active underline. They remain keyboard navigable and horizontally accessible on small screens.
 
-### Update Records
+### Review Records
 
-Each review record shows:
+Each record prioritizes the student and the meaningful update content:
 
 - Student initials and name
-- Role, team, and workstream as quiet metadata below the student name
+- Role, team, and workstream as quiet metadata below the name
 - Completed work
 - Question or support request
 - Response state
 - Operational status
 - Meeting date
-- `View update` action
+- Short `View update` action
 
-The Missing updates view shows students who did not submit for the selected meeting and their last submission date when available.
+Rows use subtle dividers instead of individual cards. The Missing view shows students who did not submit for the selected meeting and their most recent submission date when available.
 
-### Update Detail and Mentor Response
+## Student Directory
 
-Selecting `View update` opens a detailed section containing:
+Student Directory is opened from the global navigation. Its purpose is to find a student, understand their role and current focus, and open their history.
 
-- Completed
+Each directory row shows:
+
+- Student name and initials
+- Role, program, and workstream in one metadata line
+- Current focus as the central content
+- Compact status
+- `View history` action
+
+The directory uses open rows and a small role filter rather than a grid of profile cards.
+
+## Update Detail and Mentor Response
+
+Selecting `View update` opens an inline detail section containing:
+
+- Completed work
 - Working on now
 - Next steps
 - Question for Dr. Lina
 - Support needed
-- Collaborators
-- Resource links
+- Collaborators and resources
 - Submission date and time
 - Mentor response editor
 - Resolution status
 - Optional follow-up date
 
-Mentor responses are saved in browser localStorage and remain available after reload.
+The detail view uses editorial sections and amber or coral side accents for questions and support needs. Mentor responses are currently saved in browser localStorage.
 
-## Status Display Logic
+## Status Logic
 
-The displayed operational status is calculated by the shared `getDisplayStatus` function. Stored student selections are preserved, but the interface displays status in this priority order:
+The shared `getDisplayStatus` function calculates the operational status in this order:
 
 1. `Blocked` when the stored status is blocked
 2. `Needs help` when Support needed contains text
 3. `Question` when Question for Dr. Lina contains text
 4. `On track` when no active question or support request exists
 
-Status colors and labels are used consistently on Meeting Review, Submit Update history, Student Profile, response calculations, and summary information.
+Status is communicated through a labeled dot and text, not color alone. The same logic is used across Meeting Review, update history, student profiles, response calculations, and contextual counts.
 
-## Submit Update Page
+## Submit Update
 
-The Submit Update route includes:
+The Submit Update route has one primary purpose: help a student complete and submit the weekly record.
 
-- Title: `Submit weekly update`
-- Subtitle: `Share what moved forward before Wednesday’s meeting.`
-- Sofia’s identity row with initials, role, team, and workstream
+Implemented elements:
+
+- Page title: `Submit weekly update`
+- Short instruction: `Share what moved forward before Wednesday’s meeting.`
+- Sofia’s identity row with role, team, and workstream
 - Meeting date selector
 - Workstream selector
 - Completed work field
@@ -144,149 +163,171 @@ The Submit Update route includes:
 - Status selector
 - Question for Dr. Lina field
 - Support needed field
-- Optional Collaborators field
-- Optional Resources field
-- One clear `Submit update` button
 - Collapsed `Additional context` section for optional collaborators and resources
+- One primary `Submit update` action
 - Recent updates history
 
-On desktop, Question and Support needed appear side by side. On mobile, the form becomes one column with readable labels and large touch targets.
+The form uses clear labels, moderate input heights, visible focus states, and a single-column layout on mobile. Submitted updates are saved to localStorage and appear in the review workspace and Sofia’s history.
 
-Submitted updates are saved to localStorage and appear in the dashboard and Sofia’s profile history.
+## Student Profile and My History
 
-## Student Profile / My History
+The profile route has one primary purpose: help a student understand their current focus and review prior contributions.
 
-The profile page includes:
+Implemented elements:
 
-- Full-width student identity header
-- Student initials, name, role, team, and workstream
-- Current focus panel
-- `Submit a new update` action
-- Date filters
-- Workstream filter
-- Status filter
-- Expandable weekly contribution history
+- Student initials and name
+- Role, program, and workstream in one metadata line
+- Current status
+- Current focus section
+- `Submit update` action
+- Weekly record list
+- Collapsed history filters revealed through `Filter history`
+- Expandable contribution records
+- Mentor responses when available
 
-Expanded entries show the contribution sections as readable text inside one primary entry surface. Questions use amber, support requests use coral, and collaborators/resources appear as simple metadata.
+Expanded records show completed work, current work, next steps, questions, support needs, collaborators, resources, and status. History rows use separators and whitespace instead of repeated cards.
 
 ## Technical Implementation
 
 - Framework: Next.js App Router
 - Language: TypeScript and TSX
 - Styling: CSS in `src/app/globals.css`
-- Icons: Lucide React
+- Icons: Lucide React used only for meaningful controls and the brand mark
 - Data: typed fictional data in `src/data/mock-data.ts`
 - Persistence: browser localStorage only
 - Shared status logic: `src/lib/display-status.ts`
 - Update persistence: `src/lib/update-storage.ts`
+- Hosting: Vercel
 
 ## Version Roadmap
 
 ### 1. Demo Version - Current State
 
-The current deployed demo is a frontend prototype designed to show the workflow and visual direction.
+The current deployed version demonstrates the interface, information hierarchy, and core workflow.
 
 Implemented:
 
+- Calm SMART-MINDS editorial visual system
 - Dr. Lina’s Meeting Review workspace
-- Meeting date navigation
-- Team, workstream, role, search, and date filters
-- Needs response, All updates, Missing updates, and Student directory tabs
+- Meeting, team, workstream, search, and date range controls
+- Needs response, All updates, and Missing views
+- Global Student Directory destination
 - Six fictional students and sample weekly updates
-- Missing-update scenarios
-- Student profile and contribution history
-- Submit Update form for Sofia
+- Student profiles and contribution history
+- Sofia’s Submit Update flow
 - Mentor response and resolution workflow
-- Shared operational status logic
-- Responsive desktop and mobile layouts
-- Browser localStorage for submissions and mentor responses
+- Shared status calculation
+- Responsive desktop, tablet, and mobile layouts
+- Browser localStorage for demo persistence
 
-Technical limitation:
+Current limitation:
 
-- Vercel currently serves the Next.js frontend, but there is no application server or shared database.
-- localStorage only saves data in the current browser. Different students and Dr. Lina would not see the same updates across devices.
-- The student data is fictional and the demo is not ready for confidential information.
+- Vercel hosts the Next.js frontend, but the demo has no shared application server or database.
+- localStorage data is limited to the browser where it was created.
+- Different students and Dr. Lina cannot currently share live records across devices.
+- Only fictional data should be used in this version.
 
 ### 2. MVP - Minimum Usable Pilot
 
-The MVP should support a small approved pilot with real users and a limited amount of real data.
+The MVP should support a small approved pilot with real users and limited real data.
 
 Add:
 
-- Approved B-SMART copy, team names, meeting schedule, and workstreams
-- A real student identity and role selection flow
-- Server-side API routes for creating, reading, editing, and responding to updates
-- A small database for students, weekly updates, mentor responses, statuses, and meeting dates
-- Basic authentication for students and Dr. Lina
-- Permission rules so students only see their own history and Dr. Lina sees the approved review workspace
-- Server-side validation for required fields and status logic
-- Shared data across browsers and devices instead of localStorage-only behavior
-- Submission confirmation and basic error messages
-- Basic email or in-app notification when an update is submitted or answered
-- Final accessibility and mobile testing with approved content
+- Approved program copy, teams, workstreams, meeting schedule, and deadlines
+- Student and mentor authentication
+- Server-side create, read, edit, and response operations
+- Shared database records for users, meetings, updates, responses, and statuses
+- Role-based permissions
+- Server-side validation and status calculation
+- Cross-device data access
+- Submission confirmation and basic error states
+- Basic notifications for submissions and mentor responses
+- Accessibility testing with approved content
 
-Recommended MVP deployment approach:
+### Recommended MVP Architecture
 
-- Keep the existing Next.js application and Vercel project.
-- Add Next.js Route Handlers under `src/app/api/` for the server endpoints.
-- Connect those routes to an approved hosted PostgreSQL database.
-- Keep secrets in Vercel environment variables, never in source files.
+```text
+Student or mentor browser
+          |
+          v
+Next.js application on Vercel
+          |
+          v
+Next.js Route Handlers under src/app/api/
+          |
+          v
+Supabase Auth and PostgreSQL
+          |
+          +--> Row Level Security for permissions
+          +--> Database backups
+          +--> Optional notification service
+```
+
+Vercel can continue hosting both the Next.js frontend and serverless Route Handlers. Supabase is recommended for the MVP because it provides managed PostgreSQL, authentication, Row Level Security, and backups without requiring a separate rented server to be maintained.
+
+Keep all Supabase credentials and other secrets in Vercel environment variables. Do not write credentials into the repository.
 
 ### 3. Real-World Production Version
 
-The production version should be designed for reliable ongoing use by student leaders and mentors.
+The production version should support reliable ongoing use and approved student information.
 
 #### Server and Data Layer
 
-- Production API/server layer using Next.js Route Handlers or a separate approved backend service
-- PostgreSQL database with migrations and backups
-- Database tables for users, roles, teams, meetings, updates, responses, follow-ups, and audit events
-- Server-side status derivation so the client cannot override operational status
-- Input validation, rate limiting, error handling, and structured server logs
-- Draft saving, editing windows, deletion rules, and data-retention rules
+- Protected server/API layer using Next.js Route Handlers or a separate backend
+- Managed PostgreSQL with migrations, backups, and recovery procedures
+- Tables for users, roles, teams, meetings, updates, responses, follow-ups, and audit events
+- Server-side status derivation
+- Input validation, rate limiting, structured logs, and error handling
+- Draft saving, editing rules, deletion rules, and data-retention policies
 
 #### Authentication and Permissions
 
 - Secure sign-in for students, mentors, and administrators
 - Role-based access control
-- Student access limited to their own submissions and history
+- Student access limited to their own updates and history
 - Mentor access limited to approved teams and meetings
 - Administrator controls for users, teams, meetings, and content
-- Secure session management and protected API routes
+- Protected API routes and secure session handling
 
-#### Workflow Features
+#### Workflow and Operations
 
-- Email notifications for new submissions, mentor responses, and follow-up dates
+- Notifications for submissions, mentor responses, reminders, and follow-up dates
 - Response history and audit trail
-- Reminder system for missing updates
-- Export or print view for approved reports
-- Search and filtering across historical meetings
-- Clear loading, empty, error, and success states
+- Missing-update reminders
+- Approved export or print views
+- Loading, empty, error, and success states
+- Uptime, server-error, and database monitoring
+- Automated backups and tested recovery
 
-#### Privacy and Operations
+#### Privacy and Security
 
-- Privacy review before using real student information
+- Privacy review before adding real student information
 - No medical, research-participant, or confidential information without approved safeguards
 - Secure environment variables and database credentials
-- Automated backups and recovery plan
-- Monitoring for uptime, failed requests, and database errors
-- Accessibility review with keyboard and screen-reader testing
-- Content review process for status labels, instructions, and mentor guidance
+- Documented retention, deletion, and access policies
+- Accessibility testing with keyboard and screen readers
 
-#### Production Launch Checklist
+### Coolify Alternative
 
-- Approve all content and replace fictional data.
-- Configure authentication, database, server routes, and Vercel environment variables.
-- Run migrations and seed only approved non-sensitive data.
-- Test permissions with student, mentor, and administrator accounts.
-- Test mobile, desktop, keyboard, screen reader, and browser-console behavior.
-- Verify backups, error handling, notifications, and audit records.
-- Run `npm run lint` and `npm run build`.
-- Deploy through the existing Vercel project and monitor the first release.
+Coolify on a rented VPS is appropriate when self-hosting and infrastructure control are explicit requirements. It requires additional responsibility for firewall rules, operating system updates, SSL, monitoring, backups, migrations, and incident recovery.
+
+If Coolify is selected, keep the application and database separated:
+
+```text
+Users
+  |
+  v
+Coolify VPS
+  |
+  +--> Next.js application and API
+  |
+  v
+Managed PostgreSQL provider
+```
+
+Do not run the production application and database together on one inexpensive VPS unless a tested backup and recovery process is already in place. For this project, Vercel plus Supabase is the recommended first production path.
 
 ## Workflow Pipeline
-
-The SMART-MINDS Weekly Hub follows this workflow:
 
 ```text
 Student prepares update
@@ -301,7 +342,7 @@ Update is validated and saved
 Dr. Lina reviews the selected meeting
         |
         v
-Dr. Lina responds to questions or support requests
+Dr. Lina responds to questions or support needs
         |
         v
 Student views the response in My History
@@ -310,47 +351,7 @@ Student views the response in My History
 Update is resolved or followed up
 ```
 
-In the current demo, validation and persistence happen in the browser using typed mock data and localStorage. In the MVP and production versions, these steps will be handled by protected server routes and a shared database.
-
-## System Architecture
-
-### Current Demo Architecture
-
-```text
-Student or mentor browser
-          |
-          v
-Next.js frontend on Vercel
-          |
-          +--> Mock TypeScript data
-          |
-          +--> Browser localStorage
-```
-
-The current deployment demonstrates the interface and workflow. Because data is stored in localStorage, it is available only in the browser where it was created.
-
-### MVP and Production Architecture
-
-```text
-Student or mentor browser
-          |
-          v
-Next.js frontend on Vercel
-          |
-          v
-Authentication and protected API routes
-          |
-          v
-PostgreSQL database
-          |
-          +--> Email or in-app notifications
-          |
-          +--> Audit logs and monitoring
-          |
-          +--> Backups and recovery
-```
-
-The server layer will validate requests, enforce permissions, calculate operational status, and connect the application to shared database records. Vercel can host the Next.js frontend and serverless Route Handlers, while the database should use an approved hosted PostgreSQL provider.
+In the demo, validation and persistence happen in the browser. In the MVP and production versions, protected server routes and a shared database handle these steps.
 
 ## Deployment Pipeline
 
@@ -361,7 +362,7 @@ Code changes
 GitHub repository
      |
      v
-Lint and production build
+Lint, tests, and production build
      |
      v
 Vercel deployment
@@ -373,4 +374,15 @@ Production website
 Monitoring and maintenance
 ```
 
-For the current demo, deployment consists of building the Next.js application and publishing it through Vercel. For the production version, the pipeline must also apply database migrations, configure environment variables, run automated tests, verify permissions, and monitor the deployed application.
+The current demo is built and deployed through Vercel. A production pipeline must also apply database migrations, configure environment variables, run automated tests, verify permissions, confirm backups, and monitor the deployed application.
+
+## Production Launch Checklist
+
+- Approve all content and replace fictional data.
+- Configure authentication, database, server routes, and Vercel environment variables.
+- Apply database migrations and seed only approved non-sensitive data.
+- Test student, mentor, and administrator permissions.
+- Test desktop, tablet, mobile, keyboard, screen reader, and browser-console behavior.
+- Verify validation, notifications, backups, recovery, and audit records.
+- Run `npm run lint` and `npm run build`.
+- Deploy through the existing Vercel project and monitor the first release.

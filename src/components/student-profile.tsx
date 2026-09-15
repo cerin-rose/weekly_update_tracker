@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CalendarDays, ChevronDown, History } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getStudent, weeklyUpdates } from "@/data/mock-data";
@@ -15,6 +15,23 @@ const statusOptions: Array<"All statuses" | UpdateStatus> = ["All statuses", "on
 
 function statusLabel(status: UpdateStatus) {
   return { "on-track": "On track", question: "Question", "needs-help": "Needs help", blocked: "Blocked" }[status];
+}
+
+function formatDate(date: string) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function HistoryRow({ update }: { update: WeeklyUpdate & { status: UpdateStatus; mentorResponse?: MentorResponse } }) {
+  return <details className="history-entry">
+    <summary className="history-row">
+      <span className="history-cell history-date"><strong>{formatDate(update.meetingDate)}</strong><small>Submitted {new Date(update.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</small></span>
+      <span className="history-cell"><small>Workstream</small><strong>{update.workstream}</strong></span>
+      <span className="history-cell history-completed"><small>Completed</small><span>{update.completed}</span></span>
+      <span className="history-cell history-status"><small>Status</small><StatusBadge status={update.status} /></span>
+      <ChevronDown size={17} aria-hidden="true" />
+    </summary>
+    <div className="history-row-detail"><UpdateRecord update={update} /></div>
+  </details>;
 }
 
 export function StudentProfile({ studentId = "sofia-nguyen" }: { studentId?: string }) {
@@ -42,9 +59,8 @@ export function StudentProfile({ studentId = "sofia-nguyen" }: { studentId?: str
   const latest = history[0];
 
   return <main className="page-frame profile-page">
-     <div className="profile-hero"><span className="initials-avatar hero">{student.initials}</span><div className="profile-hero-copy"><p className="eyebrow">Student profile</p><h1>{student.name}</h1><div className="profile-meta"><span>{student.leadershipRole}</span><span>{student.programAffiliation}</span><span>{student.primaryWorkstream}</span></div></div><StatusBadge status={latest?.status ?? "on-track"} /></div>
-     <section className="profile-focus"><div><p className="section-kicker">Current focus</p><p>{student.currentFocus}</p></div><Link className="profile-action" href="/submit">Submit a new update <ArrowRight size={15} /></Link></section>
-     <section className="profile-history"><div className="history-heading"><div><p className="section-kicker">Contribution history</p><h2>{student.name}’s weekly record</h2></div><span><History size={15} /> {visibleHistory.length} shown</span></div><div className="history-filters"><label><span>From date</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label><label><span>To date</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as "All workstreams" | Workstream)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as "All statuses" | UpdateStatus)}>{statusOptions.map((option) => <option key={option} value={option}>{option === "All statuses" ? option : statusLabel(option)}</option>)}</select></label></div>{visibleHistory.length ? visibleHistory.map((update, index) => <details className="history-entry" key={update.id} open={index === 0}><summary><span><strong>{new Date(`${update.meetingDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</strong><small>{update.workstream} · {statusLabel(update.status)}</small></span><ChevronDown size={17} /></summary><UpdateRecord update={update} /></details>) : <p className="empty-state">No contribution history matches these filters.</p>}</section>
-    <div className="profile-footnote"><CalendarDays size={14} /><span>Weekly updates are reviewed around the Wednesday meeting rhythm.</span></div>
+     <div className="profile-hero"><span className="initials-avatar hero">{student.initials}</span><div className="profile-hero-copy"><h1>{student.name}</h1><div className="profile-meta"><span>{student.leadershipRole} · {student.programAffiliation} / {student.primaryWorkstream}</span></div></div><StatusBadge status={latest?.status ?? "on-track"} /></div>
+     <section className="profile-focus"><div><p className="section-kicker">Current focus</p><p>{student.currentFocus}</p></div><Link className="profile-action" href="/submit">Submit update</Link></section>
+     <section className="profile-history"><div className="history-heading"><div><h2>Contribution history</h2></div><span>{visibleHistory.length} shown</span></div><div className="history-filters"><label><span>From date</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label><label><span>To date</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as "All workstreams" | Workstream)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as "All statuses" | UpdateStatus)}>{statusOptions.map((option) => <option key={option} value={option}>{option === "All statuses" ? option : statusLabel(option)}</option>)}</select></label></div>{visibleHistory.length ? <div className="history-table"><div className="history-table-header"><span>Date</span><span>Workstream</span><span>Completed</span><span>Status</span><span className="sr-only">Open</span></div>{visibleHistory.map((update) => <HistoryRow key={update.id} update={update} />)}</div> : <p className="empty-state">No contribution history matches these filters.</p>}</section>
   </main>;
 }
