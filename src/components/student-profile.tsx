@@ -21,17 +21,17 @@ function formatDate(date: string) {
   return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function HistoryRow({ update }: { update: WeeklyUpdate & { status: UpdateStatus; mentorResponse?: MentorResponse } }) {
-  return <details className="history-entry">
-    <summary className="history-row">
-      <span className="history-cell history-date"><strong>{formatDate(update.meetingDate)}</strong><small>Submitted {new Date(update.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</small></span>
-      <span className="history-cell"><small>Workstream</small><strong>{update.workstream}</strong></span>
-      <span className="history-cell history-completed"><small>Completed</small><span>{update.completed}</span></span>
-      <span className="history-cell history-status"><small>Status</small><StatusBadge status={update.status} /></span>
-      <ChevronDown size={17} aria-hidden="true" />
-    </summary>
-    <div className="history-row-detail"><UpdateRecord update={update} /></div>
-  </details>;
+function HistoryRow({ update, expanded, onToggle }: { update: WeeklyUpdate & { status: UpdateStatus; mentorResponse?: MentorResponse }; expanded: boolean; onToggle: () => void }) {
+  return <>
+    <tr className="history-row">
+      <td><strong>{formatDate(update.meetingDate)}</strong><small>Submitted {new Date(update.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</small></td>
+      <td><strong>{update.workstream}</strong></td>
+      <td className="history-completed">{update.completed}</td>
+      <td><StatusBadge status={update.status} /></td>
+      <td><button className="history-toggle" type="button" aria-expanded={expanded} aria-label={`${expanded ? "Hide" : "Show"} details for ${formatDate(update.meetingDate)}`} onClick={onToggle}><ChevronDown size={17} aria-hidden="true" /></button></td>
+    </tr>
+    {expanded && <tr className="history-detail-row"><td colSpan={5}><UpdateRecord update={update} /></td></tr>}
+  </>;
 }
 
 export function StudentProfile({ studentId = "sofia-nguyen" }: { studentId?: string }) {
@@ -42,6 +42,7 @@ export function StudentProfile({ studentId = "sofia-nguyen" }: { studentId?: str
   const [toDate, setToDate] = useState("");
   const [workstream, setWorkstream] = useState<"All workstreams" | Workstream>("All workstreams");
   const [status, setStatus] = useState<"All statuses" | UpdateStatus>("All statuses");
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -61,6 +62,6 @@ export function StudentProfile({ studentId = "sofia-nguyen" }: { studentId?: str
   return <main className="page-frame profile-page">
      <div className="profile-hero"><span className="initials-avatar hero">{student.initials}</span><div className="profile-hero-copy"><h1>{student.name}</h1><div className="profile-meta"><span>{student.leadershipRole} · {student.programAffiliation} / {student.primaryWorkstream}</span></div></div><StatusBadge status={latest?.status ?? "on-track"} /></div>
      <section className="profile-focus"><div><p className="section-kicker">Current focus</p><p>{student.currentFocus}</p></div><Link className="profile-action" href="/submit">Submit update</Link></section>
-     <section className="profile-history"><div className="history-heading"><div><h2>Contribution history</h2></div><span>{visibleHistory.length} shown</span></div><div className="history-filters"><label><span>From date</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label><label><span>To date</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as "All workstreams" | Workstream)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as "All statuses" | UpdateStatus)}>{statusOptions.map((option) => <option key={option} value={option}>{option === "All statuses" ? option : statusLabel(option)}</option>)}</select></label></div>{visibleHistory.length ? <div className="history-table"><div className="history-table-header"><span>Date</span><span>Workstream</span><span>Completed</span><span>Status</span><span className="sr-only">Open</span></div>{visibleHistory.map((update) => <HistoryRow key={update.id} update={update} />)}</div> : <p className="empty-state">No contribution history matches these filters.</p>}</section>
+     <section className="profile-history"><div className="history-heading"><div><h2>Contribution history</h2></div><span>{visibleHistory.length} shown</span></div><div className="history-filters"><label><span>From date</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label><label><span>To date</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as "All workstreams" | Workstream)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as "All statuses" | UpdateStatus)}>{statusOptions.map((option) => <option key={option} value={option}>{option === "All statuses" ? option : statusLabel(option)}</option>)}</select></label></div>{visibleHistory.length ? <div className="history-table-wrap"><table className="history-table"><caption className="sr-only">Contribution history for {student.name}</caption><thead><tr><th scope="col">Date</th><th scope="col">Workstream</th><th scope="col">Completed</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Details</span></th></tr></thead><tbody>{visibleHistory.map((update) => <HistoryRow key={update.id} update={update} expanded={expandedHistoryId === update.id} onToggle={() => setExpandedHistoryId((current) => current === update.id ? null : update.id)} />)}</tbody></table></div> : <p className="empty-state">No contribution history matches these filters.</p>}</section>
   </main>;
 }
