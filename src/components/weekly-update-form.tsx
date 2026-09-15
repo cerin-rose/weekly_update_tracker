@@ -1,6 +1,5 @@
 "use client";
 
-import { Check, Link2, Send, Users } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { meetingDates, students, weeklyUpdates } from "@/data/mock-data";
 import { loadStoredUpdates, saveStoredUpdates } from "@/lib/update-storage";
@@ -52,11 +51,11 @@ export function WeeklyUpdateForm() {
   }
 
   return <main className="page-frame submit-page">
-     <div className="page-intro"><p className="eyebrow">Weekly check-in</p><h1>Submit your weekly update</h1><p className="page-description">Share your progress before Wednesday’s meeting.</p></div>
-     <div className="student-context"><span className="initials-avatar">{sofia.initials}</span><div><p className="section-kicker">Submitting as</p><h2>{sofia.name}</h2><p>{sofia.leadershipRole} · {sofia.programAffiliation} · {sofia.primaryWorkstream}</p></div><span className="context-date">Wednesday, Sep 16</span></div>
-    {submitted && <div className="success-banner"><span><Check size={16} /></span><div><strong>Update submitted</strong><p>Your check-in is now part of the shared weekly record.</p></div></div>}
+     <div className="page-intro"><h1>Submit weekly update</h1><p className="page-description">Share what moved forward before Wednesday’s meeting.</p></div>
+     <div className="student-context"><span className="initials-avatar">{sofia.initials}</span><div><h2>{sofia.name}</h2><p>{sofia.leadershipRole} · {sofia.programAffiliation} / {sofia.primaryWorkstream}</p></div><span className="context-date">Wednesday, Sep 16</span></div>
+    {submitted && <div className="success-banner"><div><strong>Update submitted</strong><p>Your weekly record has been updated.</p></div></div>}
     <form id="update-form" className="update-form" onSubmit={submit}>
-      <div className="form-heading"><div><p className="section-kicker">Weekly check-in</p><h2>What moved forward?</h2></div><span className="required-note">Required fields marked *</span></div>
+      <div className="form-heading"><h2>What moved forward?</h2><span className="required-note">* Required</span></div>
       <div className="form-grid">
         <label className="form-field" htmlFor="update-date"><span>Wednesday meeting date *</span><select id="update-date" required value={form.meetingDate} onChange={(event) => setField("meetingDate", event.target.value)}>{meetingDates.map((date) => <option key={date} value={date}>{new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}</option>)}</select></label>
         <label className="form-field" htmlFor="update-workstream"><span>Workstream *</span><select id="update-workstream" required value={form.workstream} onChange={(event) => setForm((current) => ({ ...current, workstream: event.target.value as Workstream }))}><option>Education</option><option>Research</option><option>Outreach</option><option>Communications</option><option>Fundraising</option><option>Manuscript</option><option>Social Media</option></select></label>
@@ -66,11 +65,10 @@ export function WeeklyUpdateForm() {
         <label className="form-field status-field" htmlFor="update-status"><span>Status</span><select id="update-status" value={form.status} onChange={(event) => setField("status", event.target.value)}><option value="on-track">On track</option><option value="question">I have a question</option><option value="needs-help">I need help</option><option value="blocked">I am blocked</option></select></label>
         <label className="form-field" htmlFor="update-question"><span>Question for Dr. Lina</span><textarea id="update-question" className="short" value={form.questionForDrLina} onChange={(event) => setField("questionForDrLina", event.target.value)} placeholder="What would you like to discuss on Wednesday?" /></label>
         <label className="form-field" htmlFor="update-support"><span>Support needed</span><textarea id="update-support" className="short" value={form.supportNeeded} onChange={(event) => setField("supportNeeded", event.target.value)} placeholder="Name a decision, resource, connection, or feedback that would help." /></label>
-        <label className="form-field" htmlFor="update-collaborators"><span><Users size={14} /> Collaborators <em>Optional</em></span><input id="update-collaborators" value={form.collaborators} onChange={(event) => setField("collaborators", event.target.value)} placeholder="Names separated by commas" /></label>
-        <label className="form-field" htmlFor="update-resources"><span><Link2 size={14} /> Resources <em>Optional</em></span><input id="update-resources" value={form.resourceLinks} onChange={(event) => setField("resourceLinks", event.target.value)} placeholder="Links or resource names" /></label>
       </div>
-       <div className="form-footer"><button className="primary-button" type="submit"><Send size={15} /> Submit update</button></div>
+      <details className="optional-fields"><summary>Additional context <span>Optional</span></summary><div className="optional-fields-grid"><label className="form-field" htmlFor="update-collaborators"><span>Collaborators</span><input id="update-collaborators" value={form.collaborators} onChange={(event) => setField("collaborators", event.target.value)} placeholder="Names separated by commas" /></label><label className="form-field" htmlFor="update-resources"><span>Resources</span><input id="update-resources" value={form.resourceLinks} onChange={(event) => setField("resourceLinks", event.target.value)} placeholder="Links or resource names" /></label></div></details>
+       <div className="form-footer"><button className="primary-button" type="submit">Submit update</button></div>
     </form>
-     <section className="recent-section"><div className="records-heading"><div><p className="section-kicker">Your history</p><h2>Recent updates</h2></div>{updates[0] && <StatusBadge status={getDisplayStatus(updates[0])} />}</div>{updates.map((update) => <UpdateRecord key={update.id} update={{ ...update, status: getDisplayStatus(update) }} compact />)}</section>
+     <section className="recent-section"><div className="records-heading"><h2>Recent updates</h2><span>{updates.length} entries</span></div>{updates.map((update) => <UpdateRecord key={update.id} update={{ ...update, status: getDisplayStatus(update) }} compact />)}</section>
   </main>;
 }

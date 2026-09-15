@@ -62,37 +62,35 @@ The Home route is presented as `Wednesday Meeting Review`.
 
 ### Review Controls
 
-- Meeting date selector with four Wednesday meeting dates
-- Previous and next meeting arrow buttons
+- Compact meeting toolbar with previous and next meeting controls
+- Selected meeting date, team, and workstream controls aligned in one row
 - Team filter: All teams, B-SMART, BMINDS, SMART-MINDS
 - Workstream filter: Research, Education, Outreach, Communications, Fundraising, Manuscript, Social Media
-- Student and contribution search field
-- `Date range` button with From date, To date, Apply, and Clear controls
+- Compact student and contribution search utility
+- `Date range` control with From date, To date, Apply, and Clear options
 
 ### Summary Information
 
-The page displays:
+The page displays compact contextual counts below the meeting title:
 
-- `4 of 6 submitted`
-- Number of updates needing a response
-- Number of missing updates
+- Submitted updates for the selected team and meeting
+- Updates needing a response
+- Missing updates
 
 ### Review Tabs
 
 - `Needs response`
 - `All updates`
-- `Missing updates`
-- `Student directory`
+- `Missing`
 
-The tabs are keyboard navigable and horizontally scrollable on small screens.
+The tabs use a simple text treatment with a thin active underline. They are keyboard navigable and horizontally scrollable on small screens. Student Directory remains a global navigation destination rather than a repeated Meeting Review tab.
 
 ### Update Records
 
 Each review record shows:
 
 - Student initials and name
-- Student role
-- Team and workstream
+- Role, team, and workstream as quiet metadata below the student name
 - Completed work
 - Question or support request
 - Response state
@@ -135,9 +133,9 @@ Status colors and labels are used consistently on Meeting Review, Submit Update 
 
 The Submit Update route includes:
 
-- Title: `Submit your weekly update`
-- Subtitle: `Share your progress before Wednesday’s meeting.`
-- Sofia’s identity card with initials, role, team, and workstream
+- Title: `Submit weekly update`
+- Subtitle: `Share what moved forward before Wednesday’s meeting.`
+- Sofia’s identity row with initials, role, team, and workstream
 - Meeting date selector
 - Workstream selector
 - Completed work field
@@ -149,6 +147,7 @@ The Submit Update route includes:
 - Optional Collaborators field
 - Optional Resources field
 - One clear `Submit update` button
+- Collapsed `Additional context` section for optional collaborators and resources
 - Recent updates history
 
 On desktop, Question and Support needed appear side by side. On mobile, the form becomes one column with readable labels and large touch targets.
