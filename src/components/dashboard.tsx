@@ -10,7 +10,7 @@ import type { MentorResponse, ProgramAffiliation, ResolutionStatus, Student, Upd
 import { StatusBadge } from "@/components/status-badge";
 import { UpdateRecord } from "@/components/update-record";
 
-type HomeTab = "response" | "updates" | "missing";
+type HomeTab = "response" | "updates" | "missing" | "students";
 type TeamFilter = "All teams" | ProgramAffiliation;
 type WorkstreamFilter = "All workstreams" | Workstream;
 
@@ -95,7 +95,7 @@ export function Dashboard() {
   const [selectedUpdateId, setSelectedUpdateId] = useState<string | null>(null);
   const [mentorResponses, setMentorResponses] = useState<Record<string, MentorResponse>>({});
   const [meetingDate, setMeetingDate] = useState(meetingDates[0]);
-  const [team, setTeam] = useState<TeamFilter>("BMINDS");
+   const [team, setTeam] = useState<TeamFilter>("BMINDS");
   const [workstream, setWorkstream] = useState<WorkstreamFilter>("All workstreams");
   const [role, setRole] = useState("All roles");
   const [studentSearch, setStudentSearch] = useState("");
@@ -104,7 +104,6 @@ export function Dashboard() {
   const [toDate, setToDate] = useState("");
   const [appliedFrom, setAppliedFrom] = useState("");
   const [appliedTo, setAppliedTo] = useState("");
-  const [showDirectory, setShowDirectory] = useState(false);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
@@ -117,7 +116,7 @@ export function Dashboard() {
 
   useEffect(() => {
     function syncHashView() {
-      setShowDirectory(window.location.hash === "#student-directory");
+      if (window.location.hash === "#student-directory") setActiveTab("students");
     }
 
     syncHashView();
@@ -138,7 +137,6 @@ export function Dashboard() {
   const responseFor = (update: WeeklyUpdate) => mentorResponses[update.id] ?? update.mentorResponse;
   const needsResponse = filteredMeetingUpdates.filter((update) => { const response = responseFor(update); return (getDisplayStatus(update) !== "on-track" || response?.resolutionStatus === "follow-up-needed") && response?.resolutionStatus !== "resolved"; }).sort((a, b) => statusRank[getDisplayStatus(a)] - statusRank[getDisplayStatus(b)] || a.meetingDate.localeCompare(b.meetingDate));
   const missingStudents = meetingDate === "all" ? [] : scopedStudents.filter((student) => !updates.some((update) => update.studentId === student.id && update.meetingDate === meetingDate));
-  const directoryStudents = students.filter((student) => (workstream === "All workstreams" || student.primaryWorkstream === workstream) && (role === "All roles" || student.leadershipRole === role) && matchesText(student));
   const selectedUpdate = updates.find((update) => update.id === selectedUpdateId);
   const selectedResponse = selectedUpdate ? mentorResponses[selectedUpdate.id] ?? selectedUpdate.mentorResponse : undefined;
    const effectiveUpdate = selectedUpdate ? { ...selectedUpdate, status: getDisplayStatus(selectedUpdate), mentorResponse: selectedResponse } : undefined;
@@ -175,9 +173,8 @@ export function Dashboard() {
   }
 
   return <main className="page-frame dashboard-page">
-      <div className="page-intro dashboard-intro">{showDirectory ? <><h1>Student Directory</h1><p className="page-description">Find a student, understand their current focus, and open their history.</p></> : <><h1>Wednesday Review</h1><p className="meeting-meta">{meetingDate === "all" ? "All meetings" : formatShortDate(meetingDate)} · {team}</p><p className="page-description">Review contributions, questions, and support needs for the selected meeting.</p></>}</div>
+      <div className="page-intro dashboard-intro"><h1>Wednesday Review</h1><p className="meeting-meta">{meetingDate === "all" ? "All meetings" : formatShortDate(meetingDate)} · {team}</p><p className="page-description">Review contributions, questions, and support needs for the selected meeting.</p></div>
 
-      {!showDirectory && <>
        <div className="review-toolbar"><div className="meeting-navigation"><button className="toolbar-icon-button" aria-label="Previous meeting" disabled={meetingDates.indexOf(meetingDate) === meetingDates.length - 1} onClick={() => moveMeeting(1)}><ArrowLeft size={15} /></button><label htmlFor="meeting-date"><span className="sr-only">Meeting date</span><select id="meeting-date" value={meetingDate} onChange={(event) => setMeetingDate(event.target.value)}>{meetingDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}<option value="all">All meetings</option></select></label><button className="toolbar-icon-button" aria-label="Next meeting" disabled={meetingDate === meetingDates[0]} onClick={() => moveMeeting(-1)}><ArrowRight size={15} /></button></div><label className="compact-filter" htmlFor="team-filter"><span className="sr-only">Team</span><select id="team-filter" value={team} onChange={(event) => setTeam(event.target.value as TeamFilter)}>{teamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><span className="toolbar-slash" aria-hidden="true">/</span><label className="compact-filter" htmlFor="workstream-filter"><span className="sr-only">Workstream</span><select id="workstream-filter" value={workstream} onChange={(event) => setWorkstream(event.target.value as WorkstreamFilter)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><button className="date-range-toggle" aria-expanded={showDateRange} onClick={() => setShowDateRange((current) => !current)}>Date range</button></div>
       <div className="search-row"><label className="student-search" htmlFor="student-search"><Search size={16} /><span className="sr-only">Search students or contributions</span><input id="student-search" type="search" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search updates" /></label></div>
      {showDateRange && <div className="date-range-panel" role="region" aria-label="Date range"><label><span>From date</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label><label><span>To date</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label><button className="primary-button" onClick={() => { setAppliedFrom(fromDate); setAppliedTo(toDate); }}>Apply</button><button className="quiet-button" onClick={clearDateRange}>Clear</button></div>}
@@ -190,10 +187,9 @@ export function Dashboard() {
 
      <section id="panel-updates" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-updates" hidden={activeTab !== "updates"} tabIndex={0}><div className="review-table" role="table" aria-label="All updates for selected meeting"><div className="review-table-header" role="row"><span>Student</span><span>Completed</span><span>Question / Support</span><span>Response</span><span>Status</span><span>Action</span></div>{filteredMeetingUpdates.length ? filteredMeetingUpdates.map((update) => <ReviewRow key={update.id} update={update} response={mentorResponses[update.id] ?? update.mentorResponse} onView={() => showUpdate(update.id)} />) : <p className="empty-state">No submissions for this meeting.</p>}</div></section>
 
-     <section id="panel-missing" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-missing" hidden={activeTab !== "missing"} tabIndex={0}>{meetingDate === "all" ? <p className="empty-state">Choose a Wednesday meeting to see missing updates.</p> : <div className="missing-table" role="table" aria-label="Missing updates"><div className="missing-table-header" role="row"><span>Student</span><span>Role / Team</span><span>Last submission</span><span>Status</span></div>{missingStudents.length ? missingStudents.map((student) => <MissingRow key={student.id} student={student} lastSubmission={updates.filter((update) => update.studentId === student.id && update.meetingDate < meetingDate).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]} />) : <p className="empty-state">Everyone in this view submitted an update.</p>}</div>}</section>
-      </>}
+    <section id="panel-missing" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-missing" hidden={activeTab !== "missing"} tabIndex={0}>{meetingDate === "all" ? <p className="empty-state">Choose a Wednesday meeting to see missing updates.</p> : <div className="missing-table" role="table" aria-label="Missing updates"><div className="missing-table-header" role="row"><span>Student</span><span>Role / Team</span><span>Last submission</span><span>Status</span></div>{missingStudents.length ? missingStudents.map((student) => <MissingRow key={student.id} student={student} lastSubmission={updates.filter((update) => update.studentId === student.id && update.meetingDate < meetingDate).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]} />) : <p className="empty-state">Everyone in this view submitted an update.</p>}</div>}</section>
 
-     <section id="student-directory" className="hub-panel review-panel" role="region" aria-label="Student directory" hidden={!showDirectory}><div className="directory-controls"><span>Student directory</span><label><span className="sr-only">Filter by role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label></div><div className="directory-table" role="table" aria-label="Student directory"><div className="directory-table-header" role="row"><span>Student</span><span>Current focus</span><span>Status</span><span>Action</span></div>{directoryStudents.length ? directoryStudents.map((student) => { const latest = updates.filter((update) => update.studentId === student.id).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]; return <DirectoryRow key={student.id} student={student} update={latest} onView={() => router.push(`/students/${student.id}`)} />; }) : <p className="empty-state">No students match these filters.</p>}</div></section>
+     <section id="student-directory" className="hub-panel review-panel" role="region" aria-label="Student directory" hidden={activeTab !== "students"}><div className="directory-controls"><span>Student directory</span><label><span className="sr-only">Filter by role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label></div><div className="directory-table" role="table" aria-label="Student directory"><div className="directory-table-header" role="row"><span>Student</span><span>Current focus</span><span>Status</span><span>Action</span></div>{scopedStudents.length ? scopedStudents.map((student) => { const latest = updates.filter((update) => update.studentId === student.id).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]; return <DirectoryRow key={student.id} student={student} update={latest} onView={() => router.push(`/students/${student.id}`)} />; }) : <p className="empty-state">No students match these filters.</p>}</div></section>
 
     {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}><div className="detail-heading"><div><p className="section-kicker">Update detail · {studentFor(effectiveUpdate).name}</p><h2 id="update-detail-heading">{formatDate(effectiveUpdate.meetingDate)}</h2><p className="detail-context">{studentFor(effectiveUpdate).leadershipRole} · {studentFor(effectiveUpdate).programAffiliation} · {effectiveUpdate.workstream}</p><p className="detail-submitted">Submitted {formatDateTime(effectiveUpdate.submittedAt)}</p></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div><UpdateRecord update={effectiveUpdate} /><MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} /></section>}
   </main>;
