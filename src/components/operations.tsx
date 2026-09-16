@@ -79,7 +79,7 @@ export function Operations() {
   const nextMilestone = (campaignId: string) => data.surveyGoals.filter((goal) => goal.survey_campaign_id === campaignId).find((goal) => goal.goal_date >= new Date().toISOString().slice(0, 10));
 
   return <main className="page-frame operations-page">
-    <div className="page-intro"><p className="eyebrow">SMART-MINDS operations</p><h1>Operations</h1><p className="page-description">Track people, work, relationships, and milestones in one shared workspace.</p></div>
+    <div className="page-intro"><p className="eyebrow">SMART-MINDS operations</p><h1>Operations</h1></div>
     {!hasSupabaseConfig && <div className="database-notice"><strong>Supabase is not connected.</strong><span>Run the migration, seed the database, and add the variables from <code>.env.example</code> to load shared records.</span></div>}
     {error && <p className="save-message" role="alert">{error}</p>}
     {loading ? <p className="empty-state">Loading operations data...</p> : <>
