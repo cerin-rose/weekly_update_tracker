@@ -1,6 +1,6 @@
 # SMART-MINDS Weekly Hub
 
-Frontend-only weekly documentation and mentoring demo for Dr. Lina Begdache. The project uses typed fictional data and localStorage to demonstrate meeting review, student submissions, contribution history, and mentor responses.
+SMART-MINDS Weekly Hub is a Next.js weekly documentation and mentoring workspace for Dr. Lina Begdache and the SMART-MINDS student leadership team. It uses Supabase/PostgreSQL for shared records and realtime updates.
 
 ## Start the demo
 
@@ -14,9 +14,9 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Routes
 
 - `/` - Dr. Lina’s Meeting Review workspace
-- `/submit` - Sofia’s Submit Update flow
-- `/students/sofia-nguyen` - Sofia’s contribution history
-- `/students/[studentId]` - Fictional student profile routes
+- `/submit` - Source-student Submit Update flow
+- `/students/[studentId]` - Source-student contribution history
+- `/operations` - Task board, projects, outreach, surveys, and calendar
 
 ## Validate
 
@@ -27,11 +27,17 @@ npm run build
 
 ## Scope
 
-This is frontend-only and uses typed mock data. There is no database, authentication, external API, AI feature, or paid service. Submitted updates and mentor responses persist in the browser through localStorage.
+Supabase is the authoritative data source. If it is not configured, the app shows an unavailable-data state rather than sample records.
 
-## Screenshots
+## Supabase Setup
 
-Final screenshots are in `screenshots/smart-minds-final-polish/`.
+1. Create a Supabase project.
+2. Open the Supabase SQL Editor and run `supabase/migrations/20260916000000_initial_schema.sql`.
+3. Populate the private Supabase project from the authorized local source import workflow. Do not commit the real-data importer or source records to this public repository.
+4. Copy `.env.example` to `.env.local` and add the project URL and publishable key.
+5. Add the same public variables to the Vercel project before deploying.
+
+The migration creates normalized tables for students, roles, meetings, student updates, tasks, projects, events, resources, surveys, outreach, manuscripts, fundraisers, and social-media content. The current database policies still need to be replaced with authenticated, role-specific policies before production use.
 
 ## Development note
 

@@ -7,7 +7,10 @@ export type Workstream =
   | "Communications"
   | "Fundraising"
   | "Manuscript"
-  | "Social Media";
+  | "Social Media"
+  | "Operations"
+  | "Website"
+  | "Other";
 
 export type UpdateStatus = "on-track" | "question" | "needs-help" | "blocked";
 export type ResolutionStatus = "open" | "follow-up-needed" | "resolved";

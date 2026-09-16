@@ -23,16 +23,16 @@ This is a small approval demo for Dr. Lina Begdache. SMART-MINDS Weekly Hub is a
 ## Scope Restrictions
 
 - Dr. Lina’s Home is now a functional approval-demo review experience with three tabs, inline update details, and local mentor responses.
-- Keep `/submit` and `/students/sofia-nguyen` aligned with the established demo, but do not expand either into a new product area unless a later prompt explicitly asks for it.
-- Do not add authentication, a database, external APIs, AI features, paid services, real student information, research-participant data, medical information, or confidential content.
+- Keep `/submit` and source-student profiles aligned with the established review workflow, but do not expand either into a new product area unless a later prompt explicitly asks for it.
+- Do not add research-participant data, medical information, or confidential content. Source-authorized student leadership records may be used through the configured database; authentication and access controls are required before production use.
 - Keep architecture understandable to a student developer. Create reusable components only when they reduce duplication.
 
 ## Data Rules
 
-- Keep exactly six fictional students in `src/data/mock-data.ts`.
-- Sofia Nguyen is the main student.
+- Keep the source-derived student roster in Supabase; do not add fictional students or sample updates.
+- Use the real source student directory as the profile and submit-flow source.
 - Keep all student and weekly update fields typed through `src/types/index.ts`.
-- Use fictional content only. Never add actual student or participant details.
+- Use only the supplied SMART-MINDS source content. Never add research-participant details or invent missing identity fields.
 
 ## Testing Expectations
 

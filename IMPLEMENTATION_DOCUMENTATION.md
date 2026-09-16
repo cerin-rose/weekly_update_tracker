@@ -4,7 +4,7 @@
 
 SMART-MINDS Weekly Hub is a frontend prototype for weekly contribution tracking and mentoring. It gives Dr. Lina a focused way to review student updates, identify questions or blockers, and respond. Students can submit weekly updates and review their contribution history.
 
-The current demo uses six fictional student leaders, typed mock data, and browser localStorage. It is deployed through Vercel as a workflow and visual prototype.
+The current version uses source-authorized Fall 2026 SMART-MINDS records in Supabase. Browser localStorage remains only for unsynced mentor responses when Supabase is unavailable.
 
 ## Visual Design
 
@@ -39,14 +39,14 @@ The shared header includes:
 
 - SMART-MINDS wordmark and Weekly Hub label
 - Text-based primary navigation
-- Compact `Demo view` selector
+- Direct navigation for meeting review, student directory, submit update, and operations
 
 ### Dr. Lina View
 
 - `Meeting review`
 - `Student directory`
 
-### Sofia View
+### Source Student View
 
 - `Submit update`
 - `My history`
@@ -154,7 +154,7 @@ Implemented elements:
 
 - Page title: `Submit weekly update`
 - Short instruction: `Share what moved forward before Wednesday’s meeting.`
-- Sofia’s identity row with role, team, and workstream
+- Source-student selector with role, team, and workstream
 - Meeting date selector
 - Workstream selector
 - Completed work field
@@ -167,7 +167,7 @@ Implemented elements:
 - One primary `Submit update` action
 - Recent updates history
 
-The form uses clear labels, moderate input heights, visible focus states, and a single-column layout on mobile. Submitted updates are saved to localStorage and appear in the review workspace and Sofia’s history.
+The form uses clear labels, moderate input heights, visible focus states, and a single-column layout on mobile. Submitted updates are saved to Supabase and appear in the review workspace and the selected student’s history.
 
 ## Student Profile and My History
 
@@ -193,17 +193,23 @@ Expanded records show completed work, current work, next steps, questions, suppo
 - Language: TypeScript and TSX
 - Styling: CSS in `src/app/globals.css`
 - Icons: Lucide React used only for meaningful controls and the brand mark
-- Data: typed fictional data in `src/data/mock-data.ts`
-- Persistence: browser localStorage only
+- Data: real Fall 2026 source records imported from the SMART-MINDS agendas
+- Database: Supabase PostgreSQL when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are configured
+- Realtime: Supabase Realtime subscriptions for student updates, mentor responses, tasks, projects, events, outreach, surveys, manuscripts, fundraisers, and social content
+- Local fallback: browser localStorage when Supabase is not configured
 - Shared status logic: `src/lib/display-status.ts`
 - Update persistence: `src/lib/update-storage.ts`
+- Database migration: `supabase/migrations/20260916000000_initial_schema.sql`
+- Real source importer: local-only `supabase/import-real.mjs` (excluded from the public repository because it contains source-authorized real records)
+- Database types: `src/types/database.ts`
+- Database data layer: `src/lib/supabase.ts`
 - Hosting: Vercel
 
 ## Version Roadmap
 
-### 1. Demo Version - Current State
+### 1. Source-Connected Approval Version - Current State
 
-The current deployed version demonstrates the interface, information hierarchy, and core workflow.
+The current version provides the interface, information hierarchy, core workflow, and source-connected Fall 2026 records.
 
 Implemented:
 
@@ -212,20 +218,23 @@ Implemented:
 - Meeting, team, workstream, search, and date range controls
 - Needs response, All updates, and Missing views
 - Global Student Directory destination
-- Six fictional students and sample weekly updates
+- Twenty source-derived student records and real weekly agenda updates
 - Student profiles and contribution history
-- Sofia’s Submit Update flow
+- Source-student Submit Update flow
 - Mentor response and resolution workflow
 - Shared status calculation
 - Responsive desktop, tablet, and mobile layouts
-- Browser localStorage for demo persistence
+- `/operations` workspace with task board, projects, outreach CRM, survey milestones, and calendar views
+- Supabase-backed relational data layer with realtime refresh
+- Repeatable source importer for Fall 2026 students, roles, meetings, updates, tasks, projects, events, resources, surveys, outreach, manuscripts, fundraisers, and social content
 
 Current limitation:
 
-- Vercel hosts the Next.js frontend, but the demo has no shared application server or database.
-- localStorage data is limited to the browser where it was created.
-- Different students and Dr. Lina cannot currently share live records across devices.
-- Only fictional data should be used in this version.
+- No Supabase project credentials are committed to the repository; the migration must be run in the project’s SQL Editor or through the Supabase CLI.
+- The current UI shows an unavailable-data state if Supabase is not configured; it does not fall back to fictional records.
+- The importer excludes phone numbers and credential-bearing URL fragments.
+- The current RLS policies still allow anonymous access and must be replaced with authenticated, student/mentor-specific policies before production use.
+- Source records contain some first names without surnames, relative dates, and identity/source-file ambiguities; those are preserved or explicitly normalized rather than invented.
 
 ### 2. MVP - Minimum Usable Pilot
 
@@ -378,7 +387,7 @@ The current demo is built and deployed through Vercel. A production pipeline mus
 
 ## Production Launch Checklist
 
-- Approve all content and replace fictional data.
+- Approve all source-derived content and confirm any unresolved identity/date ambiguities.
 - Configure authentication, database, server routes, and Vercel environment variables.
 - Apply database migrations and seed only approved non-sensitive data.
 - Test student, mentor, and administrator permissions.

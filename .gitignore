@@ -3,3 +3,10 @@ node_modules/
 out/
 .DS_Store
 *.log
+*.tsbuildinfo
+.env*
+!.env.example
+
+# Contains source-authorized real student records; keep out of the public repository.
+supabase/import-real.mjs
+supabase/seed.sql

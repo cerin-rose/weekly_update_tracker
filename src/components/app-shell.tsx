@@ -1,24 +1,19 @@
 "use client";
 
-import { ChevronDown, Sprout } from "lucide-react";
+import { Sprout } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const sofiaView = pathname === "/submit" || pathname.startsWith("/students");
-  const currentView = sofiaView ? (pathname === "/submit" ? "/submit" : "/students/sofia-nguyen") : "/";
-  const navigation = sofiaView
-    ? [
-        { href: "/submit", label: "Submit update" },
-        { href: "/students/sofia-nguyen", label: "My history" },
-      ]
-    : [
-        { href: "/", label: "Meeting review" },
-        { href: "/#student-directory", label: "Student directory" },
-      ];
+  const currentView = pathname === "/operations" ? "/operations" : pathname === "/submit" ? "/submit" : "/";
+  const navigation = [
+    { href: "/", label: "Meeting review" },
+    { href: "/#student-directory", label: "Student directory" },
+    { href: "/submit", label: "Submit update" },
+    { href: "/operations", label: "Operations" },
+  ];
 
   return (
     <div className="app-shell">
@@ -39,16 +34,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <label className="demo-switcher">
-          <span>Demo view</span>
-          <span className="select-wrap">
-            <select aria-label="Demo view" value={sofiaView ? "/students/sofia-nguyen" : "/"} onChange={(event) => router.push(event.target.value)}>
-              <option value="/">Dr. Lina</option>
-              <option value="/students/sofia-nguyen">Sofia</option>
-            </select>
-            <ChevronDown size={14} aria-hidden="true" />
-          </span>
-        </label>
       </header>
       {children}
     </div>
