@@ -39,7 +39,7 @@ The shared header includes:
 
 - SMART-MINDS wordmark and Weekly Hub label
 - Text-based primary navigation
-- Direct navigation for meeting review, student directory, submit update, and operations
+- Direct navigation for meeting review, student directory, and operations
 
 ### Dr. Lina View
 
@@ -154,7 +154,7 @@ Implemented elements:
 
 - Page title: `Submit weekly update`
 - Short instruction: `Share what moved forward before Wednesday’s meeting.`
-- Source-student selector with role, team, and workstream
+- Student submission workflow retained for a future separate student deployment
 - Meeting date selector
 - Workstream selector
 - Completed work field
@@ -209,7 +209,7 @@ Expanded records show completed work, current work, next steps, questions, suppo
 
 ### 1. Source-Connected Approval Version - Current State
 
-The current version provides the interface, information hierarchy, core workflow, and source-connected Fall 2026 records.
+The current version is the Dr. Lina review deployment. It provides the interface, information hierarchy, core workflow, and source-connected Fall 2026 records. The student submission workflow remains available in source code for a future separate deployment but is redirected away from this deployment.
 
 Implemented:
 

@@ -11,7 +11,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigation = [
     { href: "/", label: "Meeting review" },
     { href: "/#student-directory", label: "Student directory" },
-    { href: "/submit", label: "Submit update" },
     { href: "/operations", label: "Operations" },
   ];
 

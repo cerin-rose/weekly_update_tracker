@@ -14,7 +14,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Routes
 
 - `/` - Dr. Lina’s Meeting Review workspace
-- `/submit` - Source-student Submit Update flow
+- `/submit` - Redirects to the Dr. Lina review workspace in this deployment
 - `/students/[studentId]` - Source-student contribution history
 - `/operations` - Task board, projects, outreach, surveys, and calendar
 
@@ -27,7 +27,7 @@ npm run build
 
 ## Scope
 
-Supabase is the authoritative data source. If it is not configured, the app shows an unavailable-data state rather than sample records.
+This deployment is Dr. Lina’s review workspace. Supabase is the authoritative data source. If it is not configured, the app shows an unavailable-data state rather than sample records. The student submission component remains in the codebase for a future separate student deployment, but it is not exposed here.
 
 ## Supabase Setup
 

@@ -1,5 +1,5 @@
-import { WeeklyUpdateForm } from "@/components/weekly-update-form";
+import { redirect } from "next/navigation";
 
 export default function SubmitPage() {
-  return <WeeklyUpdateForm />;
+  redirect("/");
 }
