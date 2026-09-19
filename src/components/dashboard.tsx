@@ -4,9 +4,10 @@ import { ArrowLeft, ArrowRight, MessageCircle, Save, Search, X } from "lucide-re
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { getDisplayStatus } from "@/lib/display-status";
-import { hasSupabaseConfig, loadDatabaseState, loadOperationsState, saveRemoteMentorResponse, subscribeToDatabase, subscribeToOperations, type OperationsState } from "@/lib/supabase";
+import { createRemoteTask, hasSupabaseConfig, loadDatabaseState, loadOperationsState, saveRemoteMentorResponse, subscribeToDatabase, subscribeToOperations, type OperationsState } from "@/lib/supabase";
 import { loadMentorResponses, saveMentorResponses } from "@/lib/update-storage";
 import type { MentorResponse, ProgramAffiliation, ResolutionStatus, Student, UpdateStatus, WeeklyUpdate, Workstream } from "@/types";
+import type { TaskRow } from "@/types/database";
 import { StatusBadge } from "@/components/status-badge";
 import { UpdateRecord } from "@/components/update-record";
 
@@ -65,7 +66,7 @@ function ReviewRow({ update, students, response, onView }: { update: WeeklyUpdat
     <p className="review-question" role="cell">{questionOrSupport}</p>
     <div className="review-response" role="cell"><span>{responseLabel(response)}</span></div>
     <div className="review-status" role="cell"><StatusBadge status={status} /><small>{formatDate(update.meetingDate)}</small></div>
-    <button className="text-button review-view" onClick={onView}>View update <ArrowRight size={14} /></button>
+    <button className="text-button review-view" onClick={onView}>Details <ArrowRight size={14} /></button>
   </div>;
 }
 
@@ -76,7 +77,7 @@ function MissingRow({ student, lastSubmission }: { student: Student; lastSubmiss
 function DirectoryRow({ student, update, operations, onView }: { student: Student; update?: WeeklyUpdate; operations: OperationsState | null; onView: () => void }) {
   const activeProjects = operations?.projects.filter((project) => project.owner_student_id === student.id || operations.projectMembers.some((member) => member.project_id === project.id && member.student_id === student.id)).length ?? 0;
   const outstandingTasks = operations?.tasks.filter((task) => task.assigned_to_student_id === student.id && !["Completed", "Cancelled"].includes(task.status)).length ?? 0;
-  return <div className="directory-review-row" role="row"><button className="student-name-button" onClick={onView}><span className="initials-avatar small">{student.initials}</span><span><strong>{student.name}</strong><small>{student.leadershipRole} · {student.programAffiliation} / {student.primaryWorkstream}</small></span></button><p role="cell">{student.currentFocus}{operations && <small>{activeProjects} active projects · {outstandingTasks} outstanding tasks</small>}</p>{update && <StatusBadge status={getDisplayStatus(update)} />}<button className="text-button" onClick={onView}>View history <ArrowRight size={14} /></button></div>;
+  return <div className="directory-review-row" role="row"><button className="student-name-button" onClick={onView}><span className="initials-avatar small">{student.initials}</span><span><strong>{student.name}</strong><small>{student.leadershipRole} · {student.programAffiliation} / {student.primaryWorkstream}</small></span></button><p role="cell">{student.currentFocus}{operations && <small>{activeProjects} active projects · {outstandingTasks} outstanding tasks</small>}</p><div className="directory-status" role="cell">{update ? <StatusBadge status={getDisplayStatus(update)} /> : <span className="directory-no-status">No recent update</span>}</div><button className="text-button" onClick={onView}>View history <ArrowRight size={14} /></button></div>;
 }
 
 function MentorResponseEditor({ update, existing, onSave }: { update: WeeklyUpdate; existing?: MentorResponse; onSave: (response: MentorResponse) => void }) {
@@ -97,6 +98,39 @@ function MentorResponseEditor({ update, existing, onSave }: { update: WeeklyUpda
     <div className="response-editor-footer"><span className="response-state-note">{existing ? responseLabel(existing) : "Awaiting response"}</span><button className="primary-button" type="button" onClick={saveResponse} disabled={!message.trim()}><Save size={15} /> Save response</button></div>
     <p className="save-message" aria-live="polite">{saved ? "Response saved. The student’s status has been updated." : ""}</p>
   </section>;
+}
+
+function TaskCreationPrompt({ update, student, onCreated }: { update: WeeklyUpdate; student: Student; onCreated: (task: TaskRow) => void }) {
+  const [creating, setCreating] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function createTask() {
+    if (!hasSupabaseConfig) {
+      setMessage("Connect Supabase before creating tasks.");
+      return;
+    }
+    setCreating(true);
+    setMessage("");
+    try {
+      const task = await createRemoteTask({
+        title: `Follow up with ${student.name}`,
+        description: update.nextSteps || update.workingOn || update.completed,
+        assigned_to_student_id: student.id,
+        created_from_meeting_id: `meeting-${update.meetingDate}`,
+        category: update.workstream === "Communications" ? "Other" : update.workstream,
+        priority: "Medium",
+      });
+      onCreated(task);
+      setMessage("Task created and added to Operations.");
+    } catch (error) {
+      console.error("Unable to create task", error);
+      setMessage("The task could not be created.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return <section className="task-creation-prompt" aria-labelledby="task-prompt-heading"><div><p className="section-kicker">Next step</p><h3 id="task-prompt-heading">Create a task from this update?</h3><p>{update.nextSteps || update.workingOn || "Turn this contribution into a follow-up task."}</p></div><div className="task-creation-action"><button className="primary-button" type="button" onClick={() => void createTask()} disabled={creating}>{creating ? "Creating..." : "Create task"}</button><span aria-live="polite">{message}</span></div></section>;
 }
 
 export function Dashboard() {
@@ -256,8 +290,8 @@ export function Dashboard() {
      <section id="panel-missing" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-missing" hidden={activeTab !== "missing"} tabIndex={0}>{meetingDate === "all" ? <p className="empty-state">Choose a Wednesday meeting to see missing updates.</p> : <div className="missing-table" role="table" aria-label="Missing updates"><div className="missing-table-header" role="row"><span>Student</span><span>Role / Team</span><span>Last submission</span><span>Status</span></div>{missingStudents.length ? missingStudents.map((student) => <MissingRow key={student.id} student={student} lastSubmission={updates.filter((update) => update.studentId === student.id && update.meetingDate < meetingDate).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]} />) : <p className="empty-state">Everyone in this view submitted an update.</p>}</div>}</section>
      </>}
 
-      <section id="student-directory" className="hub-panel review-panel" role="region" aria-label="Student directory" hidden={!showDirectory}><div className="directory-controls"><span>Student directory</span><label><span className="sr-only">Filter by role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label></div><div className="directory-table" role="table" aria-label="Student directory"><div className="directory-table-header" role="row"><span>Student</span><span>Current focus</span><span>Status</span><span>Action</span></div>{scopedStudents.length ? scopedStudents.map((student) => { const latest = updates.filter((update) => update.studentId === student.id).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]; return <DirectoryRow key={student.id} student={student} update={latest} operations={operations} onView={() => router.push(`/students/${student.id}`)} />; }) : <p className="empty-state">No students match these filters.</p>}</div></section>
+       <section id="student-directory" className="hub-panel review-panel" role="region" aria-label="Student directory" hidden={!showDirectory}><div className="directory-table"><div className="directory-controls"><div className="directory-heading"><strong>Student directory</strong><small>{scopedStudents.length} students</small></div><label><span className="sr-only">Filter by role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label></div><div role="table" aria-label="Student directory"><div className="directory-table-header" role="row"><span>Student</span><span>Current focus</span><span>Status</span><span>Action</span></div>{scopedStudents.length ? scopedStudents.map((student) => { const latest = updates.filter((update) => update.studentId === student.id).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]; return <DirectoryRow key={student.id} student={student} update={latest} operations={operations} onView={() => router.push(`/students/${student.id}`)} />; }) : <p className="empty-state">No students match these filters.</p>}</div></div></section>
 
-     {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}><div className="detail-heading"><div><p className="section-kicker">Update detail · {studentFor(effectiveUpdate, students).name}</p><h2 id="update-detail-heading">{formatDate(effectiveUpdate.meetingDate)}</h2><p className="detail-context">{studentFor(effectiveUpdate, students).leadershipRole} · {studentFor(effectiveUpdate, students).programAffiliation} · {effectiveUpdate.workstream}</p><p className="detail-submitted">Submitted {formatDateTime(effectiveUpdate.submittedAt)}</p></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div><UpdateRecord update={effectiveUpdate} /><MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} /></section>}
+       {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}><div className="detail-heading"><div><p className="section-kicker">Complete update · {studentFor(effectiveUpdate, students).name}</p><h2 id="update-detail-heading">{formatDate(effectiveUpdate.meetingDate)}</h2><p className="detail-context">{studentFor(effectiveUpdate, students).leadershipRole} · {studentFor(effectiveUpdate, students).programAffiliation} · {effectiveUpdate.workstream}</p><p className="detail-submitted">Submitted {formatDateTime(effectiveUpdate.submittedAt)}</p></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div><UpdateRecord update={effectiveUpdate} /><TaskCreationPrompt update={effectiveUpdate} student={studentFor(effectiveUpdate, students)} onCreated={(task) => setOperations((current) => current ? { ...current, tasks: [task, ...current.tasks] } : current)} /><MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} /></section>}
   </main>;
 }

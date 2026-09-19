@@ -196,6 +196,26 @@ export async function updateRemoteTaskStatus(taskId: string, status: TaskRow["st
   if (error) throw error;
 }
 
+export async function createRemoteTask(input: {
+  title: string;
+  description: string;
+  assigned_to_student_id: string;
+  created_from_meeting_id: string;
+  category: TaskRow["category"];
+  priority: TaskRow["priority"];
+}) {
+  if (!supabase) throw new Error("Supabase is not connected.");
+  const { data, error } = await supabase.from("tasks").insert({
+    ...input,
+    project_id: null,
+    due_date: null,
+    status: "Not Started",
+    completed_at: null,
+  }).select("*").single();
+  if (error) throw error;
+  return data as TaskRow;
+}
+
 export async function loadOperationsState(): Promise<OperationsState | null> {
   if (!supabase) return null;
 
