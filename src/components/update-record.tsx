@@ -33,7 +33,7 @@ export function UpdateRecord({ update, compact = false }: UpdateRecordProps) {
 
       <div className="update-sections">
         <section className="update-section">
-          <h4>Completed</h4>
+          <h4>Summary</h4>
           <p>{update.completed}</p>
         </section>
         <section className="update-section">

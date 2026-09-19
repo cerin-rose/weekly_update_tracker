@@ -102,6 +102,9 @@ function MentorResponseEditor({ update, existing, onSave }: { update: WeeklyUpda
 
 function TaskCreationPrompt({ update, student, onCreated }: { update: WeeklyUpdate; student: Student; onCreated: (task: TaskRow) => void }) {
   const [creating, setCreating] = useState(false);
+  const [created, setCreated] = useState(false);
+  const [title, setTitle] = useState(`Follow up with ${student.name}`);
+  const [description, setDescription] = useState(update.nextSteps || update.workingOn || update.completed);
   const [message, setMessage] = useState("");
 
   async function createTask() {
@@ -113,14 +116,15 @@ function TaskCreationPrompt({ update, student, onCreated }: { update: WeeklyUpda
     setMessage("");
     try {
       const task = await createRemoteTask({
-        title: `Follow up with ${student.name}`,
-        description: update.nextSteps || update.workingOn || update.completed,
+        title: title.trim() || `Follow up with ${student.name}`,
+        description: description.trim(),
         assigned_to_student_id: student.id,
         created_from_meeting_id: `meeting-${update.meetingDate}`,
         category: update.workstream === "Communications" ? "Other" : update.workstream,
         priority: "Medium",
       });
       onCreated(task);
+      setCreated(true);
       setMessage("Task created and added to Operations.");
     } catch (error) {
       console.error("Unable to create task", error);
@@ -130,7 +134,7 @@ function TaskCreationPrompt({ update, student, onCreated }: { update: WeeklyUpda
     }
   }
 
-  return <section className="task-creation-prompt" aria-labelledby="task-prompt-heading"><div><p className="section-kicker">Next step</p><h3 id="task-prompt-heading">Create a task from this update?</h3><p>{update.nextSteps || update.workingOn || "Turn this contribution into a follow-up task."}</p></div><div className="task-creation-action"><button className="primary-button" type="button" onClick={() => void createTask()} disabled={creating}>{creating ? "Creating..." : "Create task"}</button><span aria-live="polite">{message}</span></div></section>;
+  return <section className="task-creation-prompt" aria-labelledby="task-prompt-heading"><div className="task-prompt-copy"><p className="section-kicker">Task planning</p><h3 id="task-prompt-heading">Turn pending work into a task</h3><div className="task-context-grid"><div><strong>Summary</strong><p>{update.completed || "No summary submitted."}</p></div><div><strong>Pending</strong><p>{update.nextSteps || update.workingOn || "No pending work submitted."}</p></div></div></div><div className="task-creation-form"><label><span>Task title</span><input value={title} onChange={(event) => setTitle(event.target.value)} /></label><label><span>Task details</span><textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} /></label><div className="task-creation-action"><button className="primary-button" type="button" onClick={() => void createTask()} disabled={creating || created}>{creating ? "Creating..." : created ? "Task created" : "Create task"}</button><span aria-live="polite">{message}</span></div></div></section>;
 }
 
 export function Dashboard() {
@@ -292,6 +296,6 @@ export function Dashboard() {
 
        <section id="student-directory" className="hub-panel review-panel" role="region" aria-label="Student directory" hidden={!showDirectory}><div className="directory-table"><div className="directory-controls"><div className="directory-heading"><strong>Student directory</strong><small>{scopedStudents.length} students</small></div><label><span className="sr-only">Filter by role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label></div><div role="table" aria-label="Student directory"><div className="directory-table-header" role="row"><span>Student</span><span>Current focus</span><span>Status</span><span>Action</span></div>{scopedStudents.length ? scopedStudents.map((student) => { const latest = updates.filter((update) => update.studentId === student.id).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]; return <DirectoryRow key={student.id} student={student} update={latest} operations={operations} onView={() => router.push(`/students/${student.id}`)} />; }) : <p className="empty-state">No students match these filters.</p>}</div></div></section>
 
-       {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}><div className="detail-heading"><div><p className="section-kicker">Complete update · {studentFor(effectiveUpdate, students).name}</p><h2 id="update-detail-heading">{formatDate(effectiveUpdate.meetingDate)}</h2><p className="detail-context">{studentFor(effectiveUpdate, students).leadershipRole} · {studentFor(effectiveUpdate, students).programAffiliation} · {effectiveUpdate.workstream}</p><p className="detail-submitted">Submitted {formatDateTime(effectiveUpdate.submittedAt)}</p></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div><UpdateRecord update={effectiveUpdate} /><TaskCreationPrompt update={effectiveUpdate} student={studentFor(effectiveUpdate, students)} onCreated={(task) => setOperations((current) => current ? { ...current, tasks: [task, ...current.tasks] } : current)} /><MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} /></section>}
+       {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}><div className="detail-heading"><div><p className="section-kicker">Complete update · {studentFor(effectiveUpdate, students).name}</p><h2 id="update-detail-heading">{formatDate(effectiveUpdate.meetingDate)}</h2><p className="detail-context">{studentFor(effectiveUpdate, students).leadershipRole} · {studentFor(effectiveUpdate, students).programAffiliation} · {effectiveUpdate.workstream}</p><p className="detail-submitted">Submitted {formatDateTime(effectiveUpdate.submittedAt)}</p></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div><UpdateRecord update={effectiveUpdate} /><TaskCreationPrompt key={effectiveUpdate.id} update={effectiveUpdate} student={studentFor(effectiveUpdate, students)} onCreated={(task) => setOperations((current) => current ? { ...current, tasks: [task, ...current.tasks] } : current)} /><MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} /></section>}
   </main>;
 }

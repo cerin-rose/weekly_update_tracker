@@ -12,9 +12,18 @@
 .task-creation-prompt { display: flex; align-items: center; justify-content: space-between; gap: 22px; margin-top: 22px; padding: 18px 20px; border: 1px solid var(--line); border-left: 3px solid var(--sage); background: var(--surface-sage); }
 .task-creation-prompt h3 { margin: 4px 0 0; color: var(--forest-dark); font-size: 16px; }
 .task-creation-prompt p:not(.section-kicker) { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
-.task-creation-action { display: grid; flex: 0 0 auto; justify-items: end; gap: 6px; }
+.task-prompt-copy { min-width: 0; flex: 1; }
+.task-context-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 17px; }
+.task-context-grid > div { min-width: 0; padding-top: 9px; border-top: 1px solid var(--sage-light); }
+.task-context-grid strong, .task-creation-form label > span { color: var(--forest); font-size: 11px; font-weight: 700; }
+.task-creation-form { display: grid; flex: 0 0 min(360px, 38%); gap: 10px; }
+.task-creation-form label { display: grid; gap: 5px; }
+.task-creation-form input, .task-creation-form textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--charcoal); background: var(--surface); font: inherit; font-size: 12px; }
+.task-creation-form textarea { min-height: 72px; resize: vertical; }
+.task-creation-action { display: grid; justify-items: end; gap: 6px; }
 .task-creation-action span { color: var(--forest); font-size: 11px; }
-@media (max-width: 620px) { .task-creation-prompt { align-items: stretch; flex-direction: column; gap: 15px; margin-top: 17px; padding: 16px; }.task-creation-action { justify-items: stretch; }.task-creation-action .primary-button { width: 100%; } }
+@media (max-width: 850px) { .task-creation-prompt { align-items: stretch; flex-direction: column; }.task-creation-form { flex-basis: auto; } }
+@media (max-width: 620px) { .task-creation-prompt { gap: 15px; margin-top: 17px; padding: 16px; }.task-context-grid { grid-template-columns: 1fr; gap: 12px; }.task-creation-action { justify-items: stretch; }.task-creation-action .primary-button { width: 100%; } }
 
 /* Directory structure */
 .dashboard-page .directory-table { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
