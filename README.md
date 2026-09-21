@@ -1,6 +1,6 @@
 # SMART-MINDS Weekly Hub
 
-SMART-MINDS Weekly Hub is a Next.js weekly documentation and mentoring workspace for Dr. Lina Begdache and the SMART-MINDS student leadership team. It uses Supabase/PostgreSQL for shared records and realtime updates.
+SMART-MINDS Weekly Hub is a Next.js weekly documentation and mentoring workspace for Dr. Lina Begdache and the SMART-MINDS student leadership team. Students submit through Google Forms, responses are stored in Google Sheets, and the Vercel app reads the sheet through an Apps Script bridge.
 
 ## Start the demo
 
@@ -14,9 +14,9 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Routes
 
 - `/` - Dr. Lina’s Meeting Review workspace
-- `/submit` - Redirects to the Dr. Lina review workspace in this deployment
+- `/submit` - Sends students to the Google Form weekly update intake
 - `/students/[studentId]` - Source-student contribution history
-- `/operations` - Task board, projects, outreach, surveys, and calendar
+- `/operations` - Google Sheet task-database setup guidance
 
 ## Validate
 
@@ -27,17 +27,11 @@ npm run build
 
 ## Scope
 
-This deployment is Dr. Lina’s review workspace. Supabase is the authoritative data source. If it is not configured, the app shows an unavailable-data state rather than sample records. The student submission component remains in the codebase for a future separate student deployment, but it is not exposed here.
+This deployment is Dr. Lina’s review workspace. Google Sheets is the authoritative source, and new Google Form submissions are read through the Apps Script bridge at `/api/weekly-updates`. Students enter updates through the Google Form at `/submit`.
 
-## Supabase Setup
+## Google Form Setup
 
-1. Create a Supabase project.
-2. Open the Supabase SQL Editor and run `supabase/migrations/20260916000000_initial_schema.sql`.
-3. Populate the private Supabase project from the authorized local source import workflow. Do not commit the real-data importer or source records to this public repository.
-4. Copy `.env.example` to `.env.local` and add the project URL and publishable key.
-5. Add the same public variables to the Vercel project before deploying.
-
-The migration creates normalized tables for students, roles, meetings, student updates, tasks, projects, events, resources, surveys, outreach, manuscripts, fundraisers, and social-media content. The current database policies still need to be replaced with authenticated, role-specific policies before production use.
+The Apps Script web app reads the linked response Sheet and returns JSON rows. Vercel can override the built-in Apps Script URL with `GOOGLE_APPS_SCRIPT_URL` if the deployment URL changes. Keep the Apps Script deployment available to the Vercel server and do not expose private spreadsheet edit access.
 
 ## Development note
 

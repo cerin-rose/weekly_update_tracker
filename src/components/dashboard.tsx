@@ -4,10 +4,9 @@ import { ArrowLeft, ArrowRight, MessageCircle, Save, Search, X } from "lucide-re
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { getDisplayStatus } from "@/lib/display-status";
-import { createRemoteTask, hasSupabaseConfig, loadDatabaseState, loadOperationsState, saveRemoteMentorResponse, subscribeToDatabase, subscribeToOperations, type OperationsState } from "@/lib/supabase";
+import { loadGoogleSheetState } from "@/lib/google-sheets";
 import { loadMentorResponses, saveMentorResponses } from "@/lib/update-storage";
 import type { MentorResponse, ProgramAffiliation, ResolutionStatus, Student, UpdateStatus, WeeklyUpdate, Workstream } from "@/types";
-import type { TaskRow } from "@/types/database";
 import { StatusBadge } from "@/components/status-badge";
 import { UpdateRecord } from "@/components/update-record";
 
@@ -74,10 +73,8 @@ function MissingRow({ student, lastSubmission }: { student: Student; lastSubmiss
   return <div className="missing-row" role="row"><div className="review-student" role="cell"><span className="initials-avatar small">{student.initials}</span><div><strong>{student.name}</strong><small>{student.leadershipRole}</small></div></div><div className="missing-team" role="cell"><strong>{student.programAffiliation}</strong><small>{student.primaryWorkstream}</small></div><span className="missing-last" role="cell">{lastSubmission ? formatDate(lastSubmission.meetingDate) : "No prior submission"}</span><span className="missing-status" role="cell">Update not submitted</span></div>;
 }
 
-function DirectoryRow({ student, update, operations, onView }: { student: Student; update?: WeeklyUpdate; operations: OperationsState | null; onView: () => void }) {
-  const activeProjects = operations?.projects.filter((project) => project.owner_student_id === student.id || operations.projectMembers.some((member) => member.project_id === project.id && member.student_id === student.id)).length ?? 0;
-  const outstandingTasks = operations?.tasks.filter((task) => task.assigned_to_student_id === student.id && !["Completed", "Cancelled"].includes(task.status)).length ?? 0;
-  return <div className="directory-review-row" role="row"><button className="student-name-button" onClick={onView}><span className="initials-avatar small">{student.initials}</span><span><strong>{student.name}</strong><small>{student.leadershipRole} · {student.programAffiliation} / {student.primaryWorkstream}</small></span></button><p role="cell">{student.currentFocus}{operations && <small>{activeProjects} active projects · {outstandingTasks} outstanding tasks</small>}</p><div className="directory-status" role="cell">{update ? <StatusBadge status={getDisplayStatus(update)} /> : <span className="directory-no-status">No recent update</span>}</div><button className="text-button" onClick={onView}>View history <ArrowRight size={14} /></button></div>;
+function DirectoryRow({ student, update, onView }: { student: Student; update?: WeeklyUpdate; onView: () => void }) {
+  return <div className="directory-review-row" role="row"><button className="student-name-button" onClick={onView}><span className="initials-avatar small">{student.initials}</span><span><strong>{student.name}</strong><small>{student.programAffiliation} · {student.primaryWorkstream}</small></span></button><p role="cell">{student.currentFocus}</p><div className="directory-status" role="cell">{update ? <StatusBadge status={getDisplayStatus(update)} /> : <span className="directory-no-status">No recent update</span>}</div><button className="text-button" onClick={onView}>View history <ArrowRight size={14} /></button></div>;
 }
 
 function MentorResponseEditor({ update, existing, onSave }: { update: WeeklyUpdate; existing?: MentorResponse; onSave: (response: MentorResponse) => void }) {
@@ -100,41 +97,8 @@ function MentorResponseEditor({ update, existing, onSave }: { update: WeeklyUpda
   </section>;
 }
 
-function TaskCreationPrompt({ update, student, onCreated }: { update: WeeklyUpdate; student: Student; onCreated: (task: TaskRow) => void }) {
-  const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState(false);
-  const [title, setTitle] = useState(`Follow up with ${student.name}`);
-  const [description, setDescription] = useState(update.nextSteps || update.workingOn || update.completed);
-  const [message, setMessage] = useState("");
-
-  async function createTask() {
-    if (!hasSupabaseConfig) {
-      setMessage("Connect Supabase before creating tasks.");
-      return;
-    }
-    setCreating(true);
-    setMessage("");
-    try {
-      const task = await createRemoteTask({
-        title: title.trim() || `Follow up with ${student.name}`,
-        description: description.trim(),
-        assigned_to_student_id: student.id,
-        created_from_meeting_id: `meeting-${update.meetingDate}`,
-        category: update.workstream === "Communications" ? "Other" : update.workstream,
-        priority: "Medium",
-      });
-      onCreated(task);
-      setCreated(true);
-      setMessage("Task created and added to Operations.");
-    } catch (error) {
-      console.error("Unable to create task", error);
-      setMessage("The task could not be created.");
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  return <section className="task-creation-prompt" aria-labelledby="task-prompt-heading"><div className="task-prompt-copy"><p className="section-kicker">Task planning</p><h3 id="task-prompt-heading">Turn pending work into a task</h3><div className="task-context-grid"><div><strong>Summary</strong><p>{update.completed || "No summary submitted."}</p></div><div><strong>Pending</strong><p>{update.nextSteps || update.workingOn || "No pending work submitted."}</p></div></div></div><div className="task-creation-form"><label><span>Task title</span><input value={title} onChange={(event) => setTitle(event.target.value)} /></label><label><span>Task details</span><textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} /></label><div className="task-creation-action"><button className="primary-button" type="button" onClick={() => void createTask()} disabled={creating || created}>{creating ? "Creating..." : created ? "Task created" : "Create task"}</button><span aria-live="polite">{message}</span></div></div></section>;
+function TaskCreationPrompt({ update }: { update: WeeklyUpdate }) {
+  return <section className="task-creation-prompt" aria-labelledby="task-prompt-heading"><div className="task-prompt-copy"><p className="section-kicker">Task planning</p><h3 id="task-prompt-heading">Pending work</h3><div className="task-context-grid"><div><strong>Summary</strong><p>{update.completed || "No summary submitted."}</p></div><div><strong>Next steps</strong><p>{update.nextSteps || update.workingOn || "No pending work submitted."}</p></div></div></div><p className="task-sheet-note">Create tasks from this pending work in the Google Sheet Tasks tab.</p></section>;
 }
 
 export function Dashboard() {
@@ -156,61 +120,32 @@ export function Dashboard() {
   const [appliedFrom, setAppliedFrom] = useState("");
   const [appliedTo, setAppliedTo] = useState("");
   const [showDirectory, setShowDirectory] = useState(false);
-  const [operations, setOperations] = useState<OperationsState | null>(null);
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
     let cancelled = false;
     async function refreshData() {
-      if (hasSupabaseConfig) {
-        try {
-          const remote = await loadDatabaseState();
-          if (!cancelled && remote) {
-            setStudents(remote.students);
-            setUpdates(remote.updates);
-            setMentorResponses(remote.mentorResponses);
-            const remoteMeetingDates = remote.meetings.map((meeting) => meeting.meeting_date).sort((a, b) => b.localeCompare(a));
-            setAvailableMeetingDates(remoteMeetingDates);
-            setMeetingDate((current) => current === "all" ? remoteMeetingDates[0] ?? "all" : current);
-          }
-        } catch (error) {
-          console.error("Unable to load Supabase data", error);
+      try {
+        const remote = await loadGoogleSheetState();
+        if (!cancelled) {
+          setStudents(remote.students);
+          setUpdates(remote.updates);
+          setMentorResponses(loadMentorResponses());
+          const remoteMeetingDates = [...new Set(remote.updates.map((update) => update.meetingDate))].sort((a, b) => b.localeCompare(a));
+          setAvailableMeetingDates(remoteMeetingDates);
+          setMeetingDate((current) => current === "all" ? remoteMeetingDates[0] ?? "all" : current);
         }
-        return;
+      } catch (error) {
+        console.error("Unable to load Google Sheet data", error);
       }
-
-      setStudents([]);
-      setUpdates([]);
-      setMentorResponses(loadMentorResponses());
     }
 
     void refreshData();
-    if (!hasSupabaseConfig) return;
-    const unsubscribe = subscribeToDatabase(() => void refreshData());
+    const refreshTimer = window.setInterval(() => void refreshData(), 60_000);
     return () => {
       cancelled = true;
-      unsubscribe();
+      window.clearInterval(refreshTimer);
     };
-  }, []);
-
-  useEffect(() => {
-    if (!hasSupabaseConfig) return;
-    let cancelled = false;
-    async function refreshOperations() {
-      try {
-        const remote = await loadOperationsState();
-        if (!cancelled && remote) {
-          setOperations(remote);
-          const remoteMeetingDates = remote.meetings.map((meeting) => meeting.meeting_date).sort((a, b) => b.localeCompare(a));
-          if (remoteMeetingDates.length) setAvailableMeetingDates(remoteMeetingDates);
-        }
-      } catch (error) {
-        console.error("Unable to load directory operations data", error);
-      }
-    }
-    void refreshOperations();
-    const unsubscribe = subscribeToOperations(() => void refreshOperations());
-    return () => { cancelled = true; unsubscribe(); };
   }, []);
 
   useEffect(() => {
@@ -264,11 +199,7 @@ export function Dashboard() {
   function saveResponse(updateId: string, response: MentorResponse) {
     const next = { ...mentorResponses, [updateId]: response };
     setMentorResponses(next);
-    if (hasSupabaseConfig) {
-      void saveRemoteMentorResponse(updateId, response).catch((error) => console.error("Unable to save Supabase response", error));
-    } else {
-      saveMentorResponses(next);
-    }
+    saveMentorResponses(next);
   }
 
   function clearDateRange() {
@@ -294,8 +225,8 @@ export function Dashboard() {
      <section id="panel-missing" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-missing" hidden={activeTab !== "missing"} tabIndex={0}>{meetingDate === "all" ? <p className="empty-state">Choose a Wednesday meeting to see missing updates.</p> : <div className="missing-table" role="table" aria-label="Missing updates"><div className="missing-table-header" role="row"><span>Student</span><span>Role / Team</span><span>Last submission</span><span>Status</span></div>{missingStudents.length ? missingStudents.map((student) => <MissingRow key={student.id} student={student} lastSubmission={updates.filter((update) => update.studentId === student.id && update.meetingDate < meetingDate).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]} />) : <p className="empty-state">Everyone in this view submitted an update.</p>}</div>}</section>
      </>}
 
-       <section id="student-directory" className="hub-panel review-panel" role="region" aria-label="Student directory" hidden={!showDirectory}><div className="directory-table"><div className="directory-controls"><div className="directory-heading"><strong>Student directory</strong><small>{scopedStudents.length} students</small></div><label><span className="sr-only">Filter by role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label></div><div role="table" aria-label="Student directory"><div className="directory-table-header" role="row"><span>Student</span><span>Current focus</span><span>Status</span><span>Action</span></div>{scopedStudents.length ? scopedStudents.map((student) => { const latest = updates.filter((update) => update.studentId === student.id).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]; return <DirectoryRow key={student.id} student={student} update={latest} operations={operations} onView={() => router.push(`/students/${student.id}`)} />; }) : <p className="empty-state">No students match these filters.</p>}</div></div></section>
+        <section id="student-directory" className="hub-panel review-panel" role="region" aria-label="Student directory" hidden={!showDirectory}><div className="directory-table"><div className="directory-controls"><div className="directory-heading"><strong>Student directory</strong><small>{scopedStudents.length} students from Google Sheet</small></div><label><span className="sr-only">Filter by role</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((option) => <option key={option}>{option}</option>)}</select></label></div><div role="table" aria-label="Student directory"><div className="directory-table-header" role="row"><span>Student</span><span>Current focus</span><span>Status</span><span>Action</span></div>{scopedStudents.length ? scopedStudents.map((student) => { const latest = updates.filter((update) => update.studentId === student.id).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]; return <DirectoryRow key={student.id} student={student} update={latest} onView={() => router.push(`/students/${student.id}`)} />; }) : <p className="empty-state">No students match these filters.</p>}</div></div></section>
 
-       {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}><div className="detail-heading"><div><p className="section-kicker">Complete update · {studentFor(effectiveUpdate, students).name}</p><h2 id="update-detail-heading">{formatDate(effectiveUpdate.meetingDate)}</h2><p className="detail-context">{studentFor(effectiveUpdate, students).leadershipRole} · {studentFor(effectiveUpdate, students).programAffiliation} · {effectiveUpdate.workstream}</p><p className="detail-submitted">Submitted {formatDateTime(effectiveUpdate.submittedAt)}</p></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div><UpdateRecord update={effectiveUpdate} /><TaskCreationPrompt key={effectiveUpdate.id} update={effectiveUpdate} student={studentFor(effectiveUpdate, students)} onCreated={(task) => setOperations((current) => current ? { ...current, tasks: [task, ...current.tasks] } : current)} /><MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} /></section>}
+        {effectiveUpdate && <section id="update-detail" className="update-detail" aria-labelledby="update-detail-heading" tabIndex={-1}><div className="detail-heading"><div><p className="section-kicker">Complete update · {studentFor(effectiveUpdate, students).name}</p><h2 id="update-detail-heading">{formatDate(effectiveUpdate.meetingDate)}</h2><p className="detail-context">{studentFor(effectiveUpdate, students).programAffiliation} · {effectiveUpdate.workstream}</p><p className="detail-submitted">Submitted {formatDateTime(effectiveUpdate.submittedAt)}</p></div><button className="icon-button" aria-label="Close update detail" onClick={() => setSelectedUpdateId(null)}><X size={18} /></button></div><UpdateRecord update={effectiveUpdate} /><TaskCreationPrompt update={effectiveUpdate} /><MentorResponseEditor key={effectiveUpdate.id} update={effectiveUpdate} existing={selectedResponse} onSave={(response) => saveResponse(effectiveUpdate.id, response)} /></section>}
   </main>;
 }

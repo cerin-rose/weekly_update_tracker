@@ -24,6 +24,7 @@
 .task-creation-action span { color: var(--forest); font-size: 11px; }
 @media (max-width: 850px) { .task-creation-prompt { align-items: stretch; flex-direction: column; }.task-creation-form { flex-basis: auto; } }
 @media (max-width: 620px) { .task-creation-prompt { gap: 15px; margin-top: 17px; padding: 16px; }.task-context-grid { grid-template-columns: 1fr; gap: 12px; }.task-creation-action { justify-items: stretch; }.task-creation-action .primary-button { width: 100%; } }
+.operations-sheet-note { max-width: 720px; margin-top: 28px; padding: 20px 22px; border-left: 3px solid var(--sage); background: var(--surface-sage); }.operations-sheet-note strong { color: var(--forest-dark); font-size: 15px; }.operations-sheet-note p { margin: 7px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
 
 /* Directory structure */
 .dashboard-page .directory-table { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
