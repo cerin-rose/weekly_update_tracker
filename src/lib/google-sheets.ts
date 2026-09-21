@@ -49,6 +49,26 @@ function studentsFromRows(rows: GoogleSheetRow[]) {
   return [...students.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function studentsFromRosterRows(rows: GoogleSheetRow[]) {
+  return rows.flatMap((row) => {
+    const name = value(row, "Student name", "Student Name", "Name");
+    if (!name || value(row, "Active").toLowerCase() === "no") return [];
+    const workstreamValue = value(row, "Workstream");
+    const primaryWorkstream = workstreams.includes(workstreamValue as Workstream) ? workstreamValue as Workstream : "Other";
+    const teamValue = value(row, "Team / program", "Team", "Program", "Column 4");
+    const programAffiliation = teamPrograms.includes(teamValue as typeof teamPrograms[number]) ? teamValue as typeof teamPrograms[number] : "SMART-MINDS";
+    return [{
+      id: value(row, "Student ID", "Student Id") || `sheet-student-${slug(name)}`,
+      name,
+      initials: name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "SM",
+      leadershipRole: value(row, "Role") || "Student contributor",
+      programAffiliation,
+      primaryWorkstream,
+      currentFocus: value(row, "Current focus", "Pending / Follow-Up", "Next Steps", "Currently Working On") || "No current focus submitted.",
+    } satisfies Student];
+  }).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function updatesFromRows(rows: GoogleSheetRow[], students: Student[]): WeeklyUpdate[] {
   const studentsByName = new Map(students.map((student) => [student.name.toLowerCase(), student]));
   return rows.flatMap((row) => {
@@ -83,8 +103,8 @@ function updatesFromRows(rows: GoogleSheetRow[], students: Student[]): WeeklyUpd
 export async function loadGoogleSheetState(): Promise<GoogleSheetState> {
   const response = await fetch("/api/weekly-updates", { cache: "no-store" });
   if (!response.ok) throw new Error("The Google Sheet could not be loaded.");
-  const payload = await response.json() as { rows?: GoogleSheetRow[] };
+  const payload = await response.json() as { rows?: GoogleSheetRow[]; students?: GoogleSheetRow[] };
   const rows = payload.rows ?? [];
-  const students = studentsFromRows(rows);
+  const students = payload.students?.length ? studentsFromRosterRows(payload.students) : studentsFromRows(rows);
   return { students, updates: updatesFromRows(rows, students) };
 }
