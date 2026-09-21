@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, House, Sprout, UserRound } from "lucide-react";
+import { House, Sprout, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -31,8 +31,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               : <Link className={`nav-link ${currentView === href ? "active" : ""}`} href={href} key={href}><Icon size={17} />{label}</Link>;
           })}
         </nav>
-
-        <label className="demo-switcher"><span>View demo as</span><span className="select-wrap"><select aria-label="View demo as"><option>Dr. Lina</option></select><ChevronDown size={15} /></span></label>
 
       </header>
       {children}
