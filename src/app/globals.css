@@ -1,5 +1,55 @@
 @import "tailwindcss";
 
+/* Reference review workspace */
+.app-shell { border-top: 8px solid #354054; background: var(--canvas); }
+.app-shell .topbar { max-width: none; min-height: 110px; padding: 0 46px; border-bottom-color: #dfe5df; background: #fffefa; }
+.app-shell .wordmark { gap: 14px; }
+.app-shell .wordmark-icon { width: 48px; height: 48px; border-radius: 16px; }
+.app-shell .wordmark strong { font-size: 16px; letter-spacing: .12em; }
+.app-shell .wordmark small { margin-top: 5px; font-size: 13px; }
+.app-shell .topnav { gap: 20px; }
+.app-shell .nav-link { min-height: 56px; padding: 0 19px; border-radius: 15px; font-size: 16px; gap: 10px; }
+.app-shell .nav-link.active { background: #eef4ef; }
+.app-shell .demo-switcher { gap: 11px; font-size: 15px; }
+.app-shell .select-wrap select { min-width: 150px; min-height: 56px; padding: 0 38px 0 16px; border-radius: 15px; font-size: 16px; }
+.app-shell .select-wrap svg { right: 14px; }
+.dashboard-page.dashboard-page { width: min(calc(100% - 92px), 1900px); padding-top: 91px; }
+.dashboard-page .dashboard-intro { max-width: 900px; margin-bottom: 40px; }
+.dashboard-page .dashboard-intro h1 { max-width: none; margin: 20px 0 18px; font-size: clamp(3rem, 4.8vw, 4.15rem); letter-spacing: -.06em; }
+.dashboard-page .dashboard-intro .eyebrow { color: var(--sage); font-size: 15px; font-weight: 700; letter-spacing: .08em; }
+.dashboard-page .dashboard-greeting { display: block; margin: 34px 0 0; color: var(--sage); font-size: 18px; font-weight: 700; }
+.dashboard-page .dashboard-intro .page-description { max-width: none; font-size: 23px; line-height: 1.45; }
+.dashboard-page .review-toolbar { gap: 17px; margin-bottom: 16px; padding: 0; border: 0; }
+.dashboard-page .review-toolbar > label, .dashboard-page .meeting-navigation > label { gap: 10px; color: var(--muted); font-size: 17px; }
+.dashboard-page .review-toolbar select, .dashboard-page .meeting-navigation select { min-height: 56px; padding: 0 38px 0 17px; border: 1px solid #d7dfd8; border-radius: 13px; background: #fffefa; color: var(--forest-dark); font-size: 18px; font-weight: 650; }
+.dashboard-page .meeting-navigation { gap: 9px; margin-right: 4px; }
+.dashboard-page .toolbar-icon-button { width: 51px; height: 51px; border-color: #d7dfd8; border-radius: 12px; background: #fffefa; }
+.dashboard-page .search-row { gap: 15px; margin-bottom: 23px; }
+.dashboard-page .student-search { min-height: 59px; border: 1px solid #d7dfd8; border-radius: 14px; background: #fffefa; }
+.dashboard-page .student-search input { min-height: 57px; font-size: 20px; }
+.dashboard-page .date-range-toggle { min-height: 59px; padding: 0 20px; border-color: #d7dfd8; border-radius: 14px; background: transparent; font-size: 17px; }
+.dashboard-page .review-summary { display: grid; grid-template-columns: repeat(3, 1fr); margin-bottom: 24px; border: 1px solid #d7dfd8; border-radius: 15px; background: #fffefa; }
+.dashboard-page .review-summary > div { display: flex; align-items: baseline; gap: 13px; padding: 21px 25px; border-right: 1px solid #d7dfd8; }
+.dashboard-page .review-summary > div:last-child { border-right: 0; }
+.dashboard-page .review-summary strong { color: var(--forest-dark); font-size: 25px; }
+.dashboard-page .review-summary span { color: var(--muted); font-size: 18px; }
+.dashboard-page .hub-tabs { width: fit-content; margin-bottom: 20px; padding: 5px; border-color: #d7dfd8; border-radius: 15px; }
+.dashboard-page .hub-tabs button, .dashboard-page .hub-directory-tab { min-height: 50px; padding: 0 20px; border-radius: 12px; color: var(--muted); font-size: 18px; }
+.dashboard-page .hub-directory-tab { display: inline-flex; align-items: center; }
+.dashboard-page .hub-tabs button.active, .dashboard-page .hub-directory-tab.active { color: var(--forest-dark); background: #fffefa; box-shadow: 0 1px 4px rgba(33, 75, 59, .12); font-weight: 700; }
+.dashboard-page .review-panel { padding: 0 38px; border: 1px solid #d7dfd8; border-radius: 17px; background: #fffefa; box-shadow: none; }
+.dashboard-page .review-table-header, .dashboard-page .review-row { grid-template-columns: minmax(260px, 1.25fr) minmax(190px, .9fr) minmax(250px, 1.15fr) minmax(280px, 1.25fr) minmax(180px, .9fr) minmax(130px, .7fr) auto; gap: 28px; }
+.dashboard-page .review-table-header { padding: 21px 0 17px; color: var(--sage); font-size: 15px; letter-spacing: .04em; }
+.dashboard-page .review-row { min-height: 126px; padding: 27px 0; border-top-color: #dfe5df; }
+.dashboard-page .review-student strong, .dashboard-page .review-workstream strong { font-size: 18px; }
+.dashboard-page .review-student small, .dashboard-page .review-workstream small { margin-top: 6px; font-size: 16px; }
+.dashboard-page .review-completed, .dashboard-page .review-question { font-size: 18px; line-height: 1.45; }
+.dashboard-page .review-response { font-size: 17px; }
+.dashboard-page .review-status small { font-size: 15px; }
+.dashboard-page .text-button { font-size: 17px; }
+@media (max-width: 900px) { .app-shell .topbar { padding-right: 28px; padding-left: 28px; }.dashboard-page.dashboard-page { width: min(calc(100% - 56px), 1360px); }.dashboard-page .review-table-header, .dashboard-page .review-row { grid-template-columns: minmax(180px, 1.2fr) minmax(150px, 1fr) minmax(180px, 1.1fr) minmax(170px, 1fr) auto; gap: 18px; } }
+@media (max-width: 620px) { .app-shell .topbar { min-height: 86px; padding: 14px 18px 10px; }.app-shell .wordmark-icon { width: 40px; height: 40px; }.app-shell .wordmark strong { font-size: 13px; }.app-shell .wordmark small { font-size: 11px; }.app-shell .topnav { gap: 4px; }.app-shell .nav-link { min-height: 42px; padding: 0 11px; font-size: 13px; }.app-shell .demo-switcher { font-size: 12px; }.app-shell .select-wrap select { min-width: 110px; min-height: 42px; font-size: 13px; }.dashboard-page.dashboard-page { width: calc(100% - 32px); padding-top: 44px; }.dashboard-page .dashboard-intro h1 { margin-top: 14px; font-size: 2.5rem; }.dashboard-page .dashboard-greeting { margin-top: 22px; font-size: 15px; }.dashboard-page .dashboard-intro .page-description { font-size: 16px; }.dashboard-page .review-toolbar { display: grid; grid-template-columns: 1fr 1fr; }.dashboard-page .review-toolbar > label, .dashboard-page .meeting-navigation > label { font-size: 13px; }.dashboard-page .review-toolbar select, .dashboard-page .meeting-navigation select { min-height: 44px; font-size: 14px; }.dashboard-page .search-row { display: grid; }.dashboard-page .student-search, .dashboard-page .date-range-toggle { min-height: 48px; }.dashboard-page .student-search input { min-height: 46px; font-size: 15px; }.dashboard-page .review-summary { grid-template-columns: 1fr; }.dashboard-page .review-summary > div { border-right: 0; border-bottom: 1px solid #d7dfd8; padding: 13px 16px; }.dashboard-page .review-summary > div:last-child { border-bottom: 0; }.dashboard-page .review-summary strong { font-size: 18px; }.dashboard-page .review-summary span { font-size: 14px; }.dashboard-page .hub-tabs { width: 100%; overflow-x: auto; }.dashboard-page .hub-tabs button, .dashboard-page .hub-directory-tab { min-height: 42px; padding: 0 13px; font-size: 13px; white-space: nowrap; }.dashboard-page .review-panel { padding: 0 17px; }.dashboard-page .review-table-header { display: none; }.dashboard-page .review-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; min-height: 0; padding: 20px 0; }.dashboard-page .review-student, .dashboard-page .review-workstream, .dashboard-page .review-completed, .dashboard-page .review-question, .dashboard-page .review-response { grid-column: 1 / -1; }.dashboard-page .review-student strong, .dashboard-page .review-workstream strong { font-size: 16px; }.dashboard-page .review-student small, .dashboard-page .review-workstream small { font-size: 14px; }.dashboard-page .review-completed, .dashboard-page .review-question { font-size: 15px; }.dashboard-page .review-status { grid-column: 1; }.dashboard-page .review-view { grid-column: 2; grid-row: auto; align-self: center; }.dashboard-page .review-response { font-size: 14px; } }
+
 .task-status-control { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 7px; color: var(--muted); font-size: 9px; }.task-status-control select { min-height: 27px; padding: 0 5px; border: 1px solid var(--line); border-radius: 5px; color: var(--forest-dark); background: var(--surface); font-size: 10px; }
 
 @media (max-width: 620px) {

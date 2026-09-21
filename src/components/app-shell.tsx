@@ -1,17 +1,16 @@
 "use client";
 
-import { Sprout } from "lucide-react";
+import { ChevronDown, House, Sprout, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const currentView = pathname === "/operations" ? "/operations" : pathname === "/submit" ? "/submit" : "/";
+  const currentView = pathname === "/" ? "/" : "";
   const navigation = [
-    { href: "/", label: "Meeting review" },
-    { href: "/#student-directory", label: "Student directory" },
-    { href: "/operations", label: "Operations" },
+    { href: "/", label: "Meeting Review", icon: House },
+    { href: "/#student-directory", label: "Student Directory", icon: UserRound },
   ];
 
   return (
@@ -26,12 +25,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="topnav" aria-label="Main navigation">
-          {navigation.map(({ href, label }) => {
+          {navigation.map(({ href, label, icon: Icon }) => {
             return href.startsWith("/#")
-              ? <a className="nav-link" href={href} key={href}>{label}</a>
-              : <Link className={`nav-link ${currentView === href ? "active" : ""}`} href={href} key={href}>{label}</Link>;
+              ? <a className="nav-link" href={href} key={href}><Icon size={17} />{label}</a>
+              : <Link className={`nav-link ${currentView === href ? "active" : ""}`} href={href} key={href}><Icon size={17} />{label}</Link>;
           })}
         </nav>
+
+        <label className="demo-switcher"><span>View demo as</span><span className="select-wrap"><select aria-label="View demo as"><option>Dr. Lina</option></select><ChevronDown size={15} /></span></label>
 
       </header>
       {children}
