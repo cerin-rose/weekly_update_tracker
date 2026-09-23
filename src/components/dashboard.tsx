@@ -108,6 +108,8 @@ export function Dashboard() {
   const [availableMeetingDates, setAvailableMeetingDates] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<HomeTab>("response");
   const [selectedUpdateId, setSelectedUpdateId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [mentorResponses, setMentorResponses] = useState<Record<string, MentorResponse>>({});
   const [meetingDate, setMeetingDate] = useState("all");
   const [team, setTeam] = useState<TeamFilter>("All teams");
@@ -125,6 +127,8 @@ export function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     async function refreshData() {
+      setIsLoading(true);
+      setLoadError("");
       try {
         const remote = await loadGoogleSheetState();
         if (!cancelled) {
@@ -134,9 +138,14 @@ export function Dashboard() {
           const remoteMeetingDates = [...new Set(remote.updates.map((update) => update.meetingDate))].sort((a, b) => b.localeCompare(a));
           setAvailableMeetingDates(remoteMeetingDates);
           setMeetingDate((current) => current === "all" ? remoteMeetingDates[0] ?? "all" : current);
+          setIsLoading(false);
         }
       } catch (error) {
         console.error("Unable to load Google Sheet data", error);
+        if (!cancelled) {
+          setLoadError("Unable to load updates right now.");
+          setIsLoading(false);
+        }
       }
     }
 
@@ -215,9 +224,9 @@ export function Dashboard() {
 
       <div className="hub-tabs" role="tablist" aria-label="Meeting review views">{[{ id: "response" as const, label: "Needs response" }, { id: "updates" as const, label: "All updates" }, { id: "missing" as const, label: "Missing updates" }].map((tab, index) => <button key={tab.id} ref={(element) => { tabRefs.current[index] = element; }} id={`tab-${tab.id}`} className={activeTab === tab.id ? "active" : ""} role="tab" aria-selected={activeTab === tab.id} aria-controls={`panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} onClick={() => setActiveTab(tab.id)} onKeyDown={(event) => handleTabKey(event, index)}>{tab.label}{tab.id === "response" && <span className="tab-count">{needsResponse.length}</span>}</button>)}</div>
 
-      <section id="panel-response" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-response" hidden={activeTab !== "response"} tabIndex={0}><div className="review-table" role="table" aria-label="Updates needing a response"><div className="review-table-header" role="row"><span>Student</span><span>Role / Team</span><span>Completed</span><span>Question / Support</span><span>Response</span><span>Status</span><span>Action</span></div>{needsResponse.length ? needsResponse.map((update) => <ReviewRow key={update.id} update={update} students={students} response={mentorResponses[update.id] ?? update.mentorResponse} onView={() => showUpdate(update.id)} />) : <p className="empty-state">No response is needed for this meeting.</p>}</div></section>
+      <section id="panel-response" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-response" hidden={activeTab !== "response"} tabIndex={0}><div className="review-table" role="table" aria-label="Updates needing a response"><div className="review-table-header" role="row"><span>Student</span><span>Role / Team</span><span>Completed</span><span>Question / Support</span><span>Response</span><span>Status</span><span>Action</span></div>{needsResponse.length ? needsResponse.map((update) => <ReviewRow key={update.id} update={update} students={students} response={mentorResponses[update.id] ?? update.mentorResponse} onView={() => showUpdate(update.id)} />) : <p className="empty-state">{isLoading ? "Loading updates…" : loadError ? <>Unable to load updates. <button className="text-button" type="button" onClick={() => window.location.reload()}>Retry</button></> : "No response is needed for this meeting."}</p>}</div></section>
 
-      <section id="panel-updates" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-updates" hidden={activeTab !== "updates"} tabIndex={0}><div className="review-table" role="table" aria-label="All updates for selected meeting"><div className="review-table-header" role="row"><span>Student</span><span>Role / Team</span><span>Completed</span><span>Question / Support</span><span>Response</span><span>Status</span><span>Action</span></div>{filteredMeetingUpdates.length ? filteredMeetingUpdates.map((update) => <ReviewRow key={update.id} update={update} students={students} response={mentorResponses[update.id] ?? update.mentorResponse} onView={() => showUpdate(update.id)} />) : <p className="empty-state">No submissions for this meeting.</p>}</div></section>
+      <section id="panel-updates" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-updates" hidden={activeTab !== "updates"} tabIndex={0}><div className="review-table" role="table" aria-label="All updates for selected meeting"><div className="review-table-header" role="row"><span>Student</span><span>Role / Team</span><span>Completed</span><span>Question / Support</span><span>Response</span><span>Status</span><span>Action</span></div>{filteredMeetingUpdates.length ? filteredMeetingUpdates.map((update) => <ReviewRow key={update.id} update={update} students={students} response={mentorResponses[update.id] ?? update.mentorResponse} onView={() => showUpdate(update.id)} />) : <p className="empty-state">{isLoading ? "Loading updates…" : loadError ? <>Unable to load updates. <button className="text-button" type="button" onClick={() => window.location.reload()}>Retry</button></> : "No submissions for this meeting."}</p>}</div></section>
 
      <section id="panel-missing" className="hub-panel review-panel" role="tabpanel" aria-labelledby="tab-missing" hidden={activeTab !== "missing"} tabIndex={0}>{meetingDate === "all" ? <p className="empty-state">Choose a Wednesday meeting to see missing updates.</p> : <div className="missing-table" role="table" aria-label="Missing updates"><div className="missing-table-header" role="row"><span>Student</span><span>Role / Team</span><span>Last submission</span><span>Status</span></div>{missingStudents.length ? missingStudents.map((student) => <MissingRow key={student.id} student={student} lastSubmission={updates.filter((update) => update.studentId === student.id && update.meetingDate < meetingDate).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0]} />) : <p className="empty-state">Everyone in this view submitted an update.</p>}</div>}</section>
      </>}
