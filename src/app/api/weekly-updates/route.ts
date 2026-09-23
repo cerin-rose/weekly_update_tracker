@@ -24,7 +24,7 @@ export async function GET() {
 
   for (const appsScriptUrl of sourceCandidates()) {
     try {
-      const response = await fetch(cacheBustedUrl(appsScriptUrl), { cache: "no-store", headers: { Accept: "application/json" } });
+      const response = await fetch(cacheBustedUrl(appsScriptUrl), { cache: "no-store", signal: AbortSignal.timeout(15000), headers: { Accept: "application/json" } });
       if (!response.ok) {
         failures.push(`${response.status}`);
         continue;

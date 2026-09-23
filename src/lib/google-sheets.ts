@@ -151,7 +151,7 @@ export async function loadGoogleSheetState(): Promise<GoogleSheetState> {
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetch(`/api/weekly-updates?attempt=${attempt}&t=${Date.now()}`, { cache: "no-store" });
+      const response = await fetch("/api/weekly-updates", { cache: "no-store" });
       const payload = await response.json() as { rows?: GoogleSheetRow[]; updates?: GoogleSheetRow[]; students?: GoogleSheetRow[]; error?: string };
       if (!response.ok) throw new Error(payload.error || "The Google Sheet could not be loaded.");
       const rows = payload.updates?.length ? payload.updates : payload.rows ?? [];
