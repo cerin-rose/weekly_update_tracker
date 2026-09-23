@@ -1,16 +1,18 @@
 "use client";
 
-import { House, Sprout, UserRound } from "lucide-react";
+import { ClipboardList, Files, House, Sprout, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const currentView = pathname === "/" ? "/" : "";
+  const currentView = pathname;
   const navigation = [
     { href: "/", label: "Meeting Review", icon: House },
+    { href: "/records", label: "Records", icon: Files },
     { href: "/#student-directory", label: "Student Directory", icon: UserRound },
+    { href: "/operations", label: "Operations", icon: ClipboardList },
   ];
 
   return (

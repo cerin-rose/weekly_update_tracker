@@ -5,14 +5,36 @@ export interface GoogleSheetState {
   updates: WeeklyUpdate[];
 }
 
-type GoogleSheetRow = Record<string, string> & { __rowNumber?: string };
+type GoogleSheetRow = Record<string, unknown> & { __rowNumber?: string };
 
 const workstreams: Workstream[] = ["Research", "Education", "Outreach", "Communications", "Fundraising", "Manuscript", "Social Media", "Operations", "Website", "Other"];
 const teamPrograms = ["B-SMART", "BMINDS", "SMART-MINDS"] as const;
-const statusMap: Record<string, UpdateStatus> = { "On track": "on-track", Question: "question", "Needs help": "needs-help", Blocked: "blocked" };
+
+const statusMap: Record<string, UpdateStatus> = {
+  "on track": "on-track",
+  completed: "on-track",
+  "in progress": "on-track",
+  planned: "on-track",
+  update: "on-track",
+  question: "question",
+  "needs help": "needs-help",
+  blocked: "blocked",
+};
+
+function textValue(raw: unknown) {
+  if (raw === null || raw === undefined) return "";
+  return String(raw).trim();
+}
 
 function value(row: GoogleSheetRow, ...keys: string[]) {
-  return keys.map((key) => row[key]?.trim()).find(Boolean) ?? "";
+  for (const key of keys) {
+    const exact = textValue(row[key]);
+    if (exact) return exact;
+    const matchingEntry = Object.entries(row).find(([header]) => header.trim().toLowerCase() === key.trim().toLowerCase());
+    const matchingValue = matchingEntry ? textValue(matchingEntry[1]) : "";
+    if (matchingValue) return matchingValue;
+  }
+  return "";
 }
 
 function slug(valueToSlug: string) {
@@ -20,27 +42,36 @@ function slug(valueToSlug: string) {
 }
 
 function dateFromRow(row: GoogleSheetRow, fallback: Date) {
-  const dateValue = value(row, "Week / meeting date", "Meeting date");
+  const dateValue = value(row, "Week / meeting date", "Meeting date", "Week", "Date");
   const date = dateValue ? new Date(dateValue) : fallback;
   return Number.isNaN(date.getTime()) ? fallback.toISOString().slice(0, 10) : date.toISOString().slice(0, 10);
+}
+
+function parseSubmittedAt(row: GoogleSheetRow, meetingDate: string) {
+  const submittedAtValue = value(row, "Timestamp", "Submitted At", "Submitted at");
+  const parsed = submittedAtValue ? new Date(submittedAtValue) : new Date(`${meetingDate}T12:00:00.000Z`);
+  return Number.isNaN(parsed.getTime()) ? new Date(`${meetingDate}T12:00:00.000Z`) : parsed;
+}
+
+function splitList(raw: string) {
+  return raw.split(/[,\n]/).map((item) => item.trim()).filter(Boolean);
 }
 
 function studentsFromRows(rows: GoogleSheetRow[]) {
   const students = new Map<string, Student>();
   for (const row of rows) {
-    const name = value(row, "Student name");
+    const name = value(row, "Student name", "Student Name", "Name");
     if (!name) continue;
-    const id = `sheet-student-${slug(name)}`;
     const workstreamValue = value(row, "Workstream");
     const primaryWorkstream = workstreams.includes(workstreamValue as Workstream) ? workstreamValue as Workstream : "Other";
-    const currentFocus = value(row, "What is still pending or needs follow-up?", "What are your next steps?", "What are you currently working on?", "What did you complete this week?");
-    const teamValue = value(row, "Team / program", "Column 4");
+    const currentFocus = value(row, "Current focus", "What is still pending or needs follow-up?", "What are your next steps?", "What are you currently working on?", "What did you complete this week?");
+    const teamValue = value(row, "Team / program", "Team", "Program", "Column 4");
     const programAffiliation = teamPrograms.includes(teamValue as typeof teamPrograms[number]) ? teamValue as typeof teamPrograms[number] : "SMART-MINDS";
     students.set(name.toLowerCase(), {
-      id,
+      id: `sheet-student-${slug(name)}`,
       name,
       initials: name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "SM",
-      leadershipRole: "Student contributor",
+      leadershipRole: value(row, "Role") || "Student contributor",
       programAffiliation,
       primaryWorkstream,
       currentFocus: currentFocus || "No current focus submitted.",
@@ -53,7 +84,7 @@ function studentsFromRosterRows(rows: GoogleSheetRow[]) {
   return rows.flatMap((row) => {
     const name = value(row, "Student name", "Student Name", "Name");
     if (!name || value(row, "Active").toLowerCase() === "no") return [];
-    const workstreamValue = value(row, "Workstream");
+    const workstreamValue = value(row, "Workstream", "Primary workstream");
     const primaryWorkstream = workstreams.includes(workstreamValue as Workstream) ? workstreamValue as Workstream : "Other";
     const teamValue = value(row, "Team / program", "Team", "Program", "Column 4");
     const programAffiliation = teamPrograms.includes(teamValue as typeof teamPrograms[number]) ? teamValue as typeof teamPrograms[number] : "SMART-MINDS";
@@ -71,40 +102,53 @@ function studentsFromRosterRows(rows: GoogleSheetRow[]) {
 
 function updatesFromRows(rows: GoogleSheetRow[], students: Student[]): WeeklyUpdate[] {
   const studentsByName = new Map(students.map((student) => [student.name.toLowerCase(), student]));
-  return rows.flatMap((row) => {
-    const submittedName = value(row, "Student name");
-    const exactStudent = studentsByName.get(submittedName.toLowerCase());
-    const firstNameMatches = students.filter((student) => student.name.split(/\s+/)[0].toLowerCase() === submittedName.split(/\s+/)[0].toLowerCase());
-    const student = exactStudent ?? (firstNameMatches.length === 1 ? firstNameMatches[0] : undefined);
-    const submittedAt = new Date(value(row, "Timestamp"));
-    if (!student || Number.isNaN(submittedAt.getTime())) return [];
 
+  return rows.map((row, index) => {
+    const submittedName = value(row, "Student name", "Student Name");
+    const student = studentsByName.get(submittedName.toLowerCase());
+    const meetingDate = dateFromRow(row, new Date());
+    const submittedAt = parseSubmittedAt(row, meetingDate);
     const workstreamValue = value(row, "Workstream");
-    const workstream = workstreams.includes(workstreamValue as Workstream) ? workstreamValue as Workstream : "Other";
-    const rowNumber = value(row, "__rowNumber") || submittedAt.toISOString();
-    return [{
-      id: `sheet-update-${rowNumber}`,
-      studentId: student.id,
-      meetingDate: dateFromRow(row, submittedAt),
-      workstream,
-      completed: value(row, "What did you complete this week?"),
-      workingOn: value(row, "What are you currently working on?"),
-      nextSteps: value(row, "What are your next steps?", "What is still pending or needs follow-up?"),
-      questionForDrLina: value(row, "What question do you have for Dr. Lina?"),
-      supportNeeded: value(row, "What support do you need?"),
-      collaborators: value(row, "Who did you collaborate with?").split(",").map((item) => item.trim()).filter(Boolean),
-      resourceLinks: value(row, "Add any relevant links or file names").split(",").map((item) => item.trim()).filter(Boolean),
-      status: statusMap[value(row, "Current status")] ?? "on-track",
+    const statusValue = value(row, "Current status", "Status").toLowerCase();
+    const rowNumber = value(row, "__rowNumber") || String(index + 2);
+    const task = value(row, "Task", "Task title");
+    const sourceRecordId = value(row, "Source record ID", "Source Record ID", "Record ID", "ID") || rowNumber;
+    const recordType = student ? "student" : submittedName ? "unassigned" : "meeting";
+
+    return {
+      id: `sheet-update-${sourceRecordId}-${rowNumber}`,
+      studentId: student?.id ?? null,
+      studentName: student?.name ?? submittedName,
+      recordType,
+      meetingDate,
+      workstream: workstreams.includes(workstreamValue as Workstream) ? workstreamValue as Workstream : "Other",
+      completed: value(row, "What did you complete this week?", "Completed This Week") || (value(row, "Task status", "Task Status").toLowerCase() === "completed" ? task : ""),
+      workingOn: value(row, "What are you currently working on?", "Currently Working On"),
+      nextSteps: value(row, "What are your next steps?", "What is still pending or needs follow-up?", "Pending / Follow-Up", "Next Steps") || task,
+      questionForDrLina: value(row, "What question do you have for Dr. Lina?", "Question for Dr. Lina"),
+      supportNeeded: value(row, "What support do you need?", "Support Needed"),
+      collaborators: splitList(value(row, "Who did you collaborate with?", "Collaborators")),
+      resourceLinks: splitList(value(row, "Add any relevant links or file names", "Relevant Links / Files", "Source links")),
+      task,
+      taskStatus: value(row, "Task status", "Task Status"),
+      project: value(row, "Project"),
+      event: value(row, "Event"),
+      sourceRecordId,
+      sourceDocument: value(row, "Source document", "Source Document", "Document"),
+      sourceSection: value(row, "Source section", "Source Section", "Section"),
+      attributionEvidence: value(row, "Attribution Evidence", "Evidence"),
+      attributionNote: value(row, "Attribution Note", "Attribution note"),
+      status: statusMap[statusValue] ?? "on-track",
       submittedAt: submittedAt.toISOString(),
-    } satisfies WeeklyUpdate];
+    } satisfies WeeklyUpdate;
   }).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate) || b.submittedAt.localeCompare(a.submittedAt));
 }
 
 export async function loadGoogleSheetState(): Promise<GoogleSheetState> {
   const response = await fetch("/api/weekly-updates", { cache: "no-store" });
   if (!response.ok) throw new Error("The Google Sheet could not be loaded.");
-  const payload = await response.json() as { rows?: GoogleSheetRow[]; students?: GoogleSheetRow[] };
-  const rows = payload.rows ?? [];
+  const payload = await response.json() as { rows?: GoogleSheetRow[]; updates?: GoogleSheetRow[]; students?: GoogleSheetRow[] };
+  const rows = payload.updates?.length ? payload.updates : payload.rows ?? [];
   const students = payload.students?.length ? studentsFromRosterRows(payload.students) : studentsFromRows(rows);
   return { students, updates: updatesFromRows(rows, students) };
 }

@@ -14,6 +14,7 @@ export type Workstream =
 
 export type UpdateStatus = "on-track" | "question" | "needs-help" | "blocked";
 export type ResolutionStatus = "open" | "follow-up-needed" | "resolved";
+export type RecordType = "student" | "meeting" | "unassigned";
 
 export interface Student {
   id: string;
@@ -34,7 +35,9 @@ export interface MentorResponse {
 
 export interface WeeklyUpdate {
   id: string;
-  studentId: string;
+  studentId: string | null;
+  studentName: string;
+  recordType: RecordType;
   meetingDate: string;
   workstream: Workstream;
   completed: string;
@@ -44,9 +47,18 @@ export interface WeeklyUpdate {
   supportNeeded: string;
   collaborators: string[];
   resourceLinks: string[];
+  task: string;
+  taskStatus: string;
+  project: string;
+  event: string;
+  sourceRecordId: string;
+  sourceDocument: string;
+  sourceSection: string;
+  attributionEvidence: string;
+  attributionNote: string;
   status: UpdateStatus;
   submittedAt: string;
   mentorResponse?: MentorResponse;
 }
 
-export type UpdateWithStudent = WeeklyUpdate & { student: Student };
+export type UpdateWithStudent = WeeklyUpdate & { student?: Student };

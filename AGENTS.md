@@ -8,10 +8,10 @@ This is a small approval demo for Dr. Lina Begdache. SMART-MINDS Weekly Hub is a
 
 - Next.js with App Router
 - TypeScript
-- Tailwind CSS
+- CSS modules are not used; shared presentation lives in `src/app/globals.css`
 - Lucide React
-- Mock TypeScript data
-- localStorage only when a future interaction needs persistence
+- Google Sheets through `/api/weekly-updates`
+- localStorage only for mentor responses that are intentionally local to the review browser
 
 ## Visual Rules
 
@@ -29,7 +29,11 @@ This is a small approval demo for Dr. Lina Begdache. SMART-MINDS Weekly Hub is a
 
 ## Data Rules
 
-- Keep the source-derived student roster in Supabase; do not add fictional students or sample updates.
+- Google Sheets and the Apps Script bridge are the only source of student and update records.
+- Do not add fictional students, mock updates, demo selectors, or Supabase runtime reads.
+- Keep meeting-level rows with blank student names available as meeting-level records.
+- Use only canonical student names returned by the roster/API.
+- Preserve source record IDs, dates, tasks, questions, links, and attribution information.
 - Use the real source student directory as the profile and submit-flow source.
 - Keep all student and weekly update fields typed through `src/types/index.ts`.
 - Use only the supplied SMART-MINDS source content. Never add research-participant details or invent missing identity fields.
@@ -37,5 +41,5 @@ This is a small approval demo for Dr. Lina Begdache. SMART-MINDS Weekly Hub is a
 ## Testing Expectations
 
 - Run `npm run lint` and `npm run build` before stopping.
-- Check all three routes, the demo selector, and mobile navigation after UI changes.
+- Check `/`, `/submit`, `/operations`, a roster-backed `/students/[studentId]`, and mobile navigation after UI changes.
 - Resolve lint, TypeScript, and build errors before reporting completion.
