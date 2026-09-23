@@ -141,7 +141,7 @@ export function Dashboard() {
 
   return <main className="page-frame dashboard-page">
     <header className="page-header dashboard-header">
-      <h1>{showDirectory ? "Student directory" : "Weekly Hub"}</h1>
+      <h1>{showDirectory ? "Student directory" : "Weekly contributions"}</h1>
     </header>
 
     {error && <div className="notice notice-error" role="alert"><div><strong>We couldn’t load the updates.</strong><p>{error}</p></div><button className="button button-secondary" type="button" onClick={() => void refreshData()}><RefreshCw size={15} /> Retry</button></div>}
