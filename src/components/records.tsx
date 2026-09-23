@@ -67,7 +67,7 @@ export function Records() {
   const studentFor = (update: WeeklyUpdate) => update.studentId ? students.find((student) => student.id === update.studentId) : undefined;
   const filteredUpdates = updates.filter((update) => {
     const student = studentFor(update);
-    const searchable = [update.studentName, update.workstream, update.completed, update.workingOn, update.nextSteps, update.questionForDrLina, update.supportNeeded, update.task, update.sourceRecordId].join(" ").toLowerCase();
+    const searchable = [update.studentName, update.workstream, update.completed, update.workingOn, update.nextSteps, update.questionForDrLina, update.supportNeeded, update.collaborators.join(" "), update.task, update.taskStatus, update.project, update.event, update.sourceRecordId, update.sourceDocument, update.sourceSection, update.attributionEvidence, update.attributionNote].join(" ").toLowerCase();
     return (meetingDate === "all" || update.meetingDate === meetingDate) && (team === "All teams" || student?.programAffiliation === team) && (workstream === "All workstreams" || update.workstream === workstream) && (status === "All statuses" || getDisplayStatus(update) === status) && (!search.trim() || searchable.includes(search.trim().toLowerCase()));
   });
 

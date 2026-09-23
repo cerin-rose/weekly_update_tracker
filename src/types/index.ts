@@ -13,7 +13,6 @@ export type Workstream =
   | "Other";
 
 export type UpdateStatus = "on-track" | "question" | "needs-help" | "blocked";
-export type ResolutionStatus = "open" | "follow-up-needed" | "resolved";
 export type RecordType = "student" | "meeting" | "unassigned";
 
 export interface Student {
@@ -24,13 +23,6 @@ export interface Student {
   programAffiliation: ProgramAffiliation;
   primaryWorkstream: Workstream;
   currentFocus: string;
-}
-
-export interface MentorResponse {
-  message: string;
-  respondedAt: string;
-  resolutionStatus: ResolutionStatus;
-  followUpDate?: string;
 }
 
 export interface WeeklyUpdate {
@@ -58,7 +50,6 @@ export interface WeeklyUpdate {
   attributionNote: string;
   status: UpdateStatus;
   submittedAt: string;
-  mentorResponse?: MentorResponse;
 }
 
 export type UpdateWithStudent = WeeklyUpdate & { student?: Student };
