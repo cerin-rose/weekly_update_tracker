@@ -106,7 +106,7 @@ export function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [updates, setUpdates] = useState<WeeklyUpdate[]>([]);
   const [availableMeetingDates, setAvailableMeetingDates] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<HomeTab>("response");
+  const [activeTab, setActiveTab] = useState<HomeTab>("updates");
   const [selectedUpdateId, setSelectedUpdateId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
