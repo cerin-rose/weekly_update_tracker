@@ -43,7 +43,7 @@ SMART-MINDS Weekly Hub is an internal weekly documentation and meeting-review sy
 ## Testing Expectations
 
 - Run `npm run lint` and `npm run build` before stopping.
-- Check `/`, `/submit`, `/operations`, a roster-backed `/students/[studentId]`, and mobile navigation after UI changes.
+- Check `/`, `/submit`, a roster-backed `/students/[studentId]`, and mobile navigation after UI changes.
 - Resolve lint, TypeScript, and build errors before reporting completion.
 
 <!-- BEGIN:nextjs-agent-rules -->

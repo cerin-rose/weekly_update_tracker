@@ -5,6 +5,8 @@ export interface GoogleSheetState {
   updates: WeeklyUpdate[];
 }
 
+const browserCacheKey = "smart-minds-weekly-updates-cache-v1";
+
 type GoogleSheetRow = Record<string, unknown> & { __rowNumber?: string };
 
 const workstreams: Workstream[] = ["Research", "Education", "Outreach", "Communications", "Fundraising", "Manuscript", "Social Media", "Operations", "Website", "Other"];
@@ -145,10 +147,37 @@ function updatesFromRows(rows: GoogleSheetRow[], students: Student[]): WeeklyUpd
 }
 
 export async function loadGoogleSheetState(): Promise<GoogleSheetState> {
-  const response = await fetch("/api/weekly-updates", { cache: "no-store" });
-  if (!response.ok) throw new Error("The Google Sheet could not be loaded.");
-  const payload = await response.json() as { rows?: GoogleSheetRow[]; updates?: GoogleSheetRow[]; students?: GoogleSheetRow[] };
-  const rows = payload.updates?.length ? payload.updates : payload.rows ?? [];
-  const students = payload.students?.length ? studentsFromRosterRows(payload.students) : studentsFromRows(rows);
-  return { students, updates: updatesFromRows(rows, students) };
+  let lastError = "The Google Sheet could not be loaded.";
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(`/api/weekly-updates?attempt=${attempt}&t=${Date.now()}`, { cache: "no-store" });
+      const payload = await response.json() as { rows?: GoogleSheetRow[]; updates?: GoogleSheetRow[]; students?: GoogleSheetRow[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "The Google Sheet could not be loaded.");
+      const rows = payload.updates?.length ? payload.updates : payload.rows ?? [];
+      const students = payload.students?.length ? studentsFromRosterRows(payload.students) : studentsFromRows(rows);
+      if (!rows.length && !students.length) throw new Error("The Google Sheets source returned no records.");
+      if (typeof window !== "undefined") window.sessionStorage.setItem(browserCacheKey, JSON.stringify(payload));
+      return { students, updates: updatesFromRows(rows, students) };
+    } catch (loadError) {
+      lastError = loadError instanceof Error ? loadError.message : lastError;
+      if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 700));
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    const cachedPayload = window.sessionStorage.getItem(browserCacheKey);
+    if (cachedPayload) {
+      try {
+        const payload = JSON.parse(cachedPayload) as { rows?: GoogleSheetRow[]; updates?: GoogleSheetRow[]; students?: GoogleSheetRow[] };
+        const rows = payload.updates?.length ? payload.updates : payload.rows ?? [];
+        const students = payload.students?.length ? studentsFromRosterRows(payload.students) : studentsFromRows(rows);
+        if (rows.length || students.length) return { students, updates: updatesFromRows(rows, students) };
+      } catch {
+        window.sessionStorage.removeItem(browserCacheKey);
+      }
+    }
+  }
+
+  throw new Error(lastError);
 }

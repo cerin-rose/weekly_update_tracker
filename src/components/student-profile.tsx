@@ -20,6 +20,11 @@ function formatDate(date: string) {
   return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function profileIdMatches(student: Student, requestedId: string) {
+  const nameSlug = student.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return student.id === requestedId || requestedId === `sheet-student-${nameSlug}` || requestedId === `student-${nameSlug}`;
+}
+
 function HistoryEntry({ update, expanded, onToggle }: { update: WeeklyUpdate & { status: UpdateStatus }; expanded: boolean; onToggle: () => void }) {
   return <article className="history-entry">
     <button className="history-entry-header" type="button" aria-expanded={expanded} onClick={onToggle}><span><strong>{formatDate(update.meetingDate)}</strong><small>{update.workstream} · {update.completed || update.nextSteps || "No update summary"}</small></span><span className="history-entry-meta"><StatusBadge status={update.status} /><ChevronDown size={18} aria-hidden="true" /></span></button>
@@ -43,8 +48,9 @@ export function StudentProfile({ studentId }: { studentId: string }) {
     setError("");
     try {
       const remote = await loadGoogleSheetState();
-      setStudent(remote.students.find((candidate) => candidate.id === studentId) ?? null);
-      setUpdates(remote.updates.filter((update) => update.studentId === studentId));
+      const profileStudent = remote.students.find((candidate) => profileIdMatches(candidate, studentId)) ?? null;
+      setStudent(profileStudent);
+      setUpdates(profileStudent ? remote.updates.filter((update) => update.studentId === profileStudent.id) : []);
     } catch (loadError) {
       console.error("Unable to load Google Sheet profile data", loadError);
       setError(loadError instanceof Error ? loadError.message : "The Google Sheets source could not be loaded.");
