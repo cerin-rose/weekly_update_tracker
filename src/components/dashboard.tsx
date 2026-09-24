@@ -40,8 +40,8 @@ function taskText(update: WeeklyUpdate) {
   return update.task || update.nextSteps || update.workingOn || update.completed || "—";
 }
 
-function noteText(update: WeeklyUpdate) {
-  const pieces = [update.meetingNotes, update.questionForDrLina ? `Question: ${update.questionForDrLina}` : "", update.supportNeeded ? `Support: ${update.supportNeeded}` : "", update.collaborators.length ? `Collaborators: ${update.collaborators.join(" · ")}` : ""].filter(Boolean);
+function noteText(update: WeeklyUpdate, meetingNotes = update.meetingNotes) {
+  const pieces = [meetingNotes, update.questionForDrLina ? `Question: ${update.questionForDrLina}` : "", update.supportNeeded ? `Support: ${update.supportNeeded}` : "", update.collaborators.length ? `Collaborators: ${update.collaborators.join(" · ")}` : ""].filter(Boolean);
   return pieces.join(" · ") || "—";
 }
 
@@ -55,7 +55,7 @@ function MeetingUpdateRow({ update, student, onStudent }: { update: WeeklyUpdate
     <td><strong className="meeting-task">{taskText(update)}</strong>{update.workingOn && update.task && <small className="table-subtext">Currently: {update.workingOn}</small>}{update.completed && update.task && <small className="table-subtext">Completed: {update.completed}</small>}</td>
     <td><StatusBadge status={getDisplayStatus(update)} /></td>
     <td>{update.event || "—"}</td>
-    <td>{feedback.notes !== "" ? feedback.notes : noteText(update)}</td>
+    <td>{noteText(update, feedback.notes)}</td>
     <td className="review-cell-feedback">{feedback.feedback || "—"}</td>
     <td>{formatDate(update.meetingDate)}</td>
     <td>{link ? <a className="table-source" href={link} target="_blank" rel="noreferrer">Open source ↗</a> : "—"}{relatedLinks.length > 0 && <small className="table-subtext">{relatedLinks.join(" · ")}</small>}</td>
