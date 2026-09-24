@@ -37,12 +37,12 @@ function splitFeedback(notes: string) {
 }
 
 function taskText(update: WeeklyUpdate) {
-  return update.task || update.nextSteps || update.workingOn || update.completed || "—";
+  return update.task || update.nextSteps || update.workingOn || update.completed || "-";
 }
 
 function noteText(update: WeeklyUpdate, meetingNotes = update.meetingNotes) {
   const pieces = [meetingNotes, update.questionForDrLina ? `Question: ${update.questionForDrLina}` : "", update.supportNeeded ? `Support: ${update.supportNeeded}` : "", update.collaborators.length ? `Collaborators: ${update.collaborators.join(" · ")}` : ""].filter(Boolean);
-  return pieces.join(" · ") || "—";
+  return pieces.join(" · ") || "-";
 }
 
 function MeetingUpdateRow({ update, student, onStudent }: { update: WeeklyUpdate; student?: Student; onStudent: (studentId: string) => void }) {
@@ -54,10 +54,10 @@ function MeetingUpdateRow({ update, student, onStudent }: { update: WeeklyUpdate
     <td className="review-cell-owner">{student ? <span className="review-owner"><span className="owner-mark">{student.initials}</span><span><strong><button className="student-name-link" type="button" onClick={() => onStudent(student.id)}>{student.name}</button></strong><small>{student.programAffiliation}</small></span></span> : <span className="meeting-level-label">Meeting-level</span>}</td>
     <td><strong className="meeting-task">{taskText(update)}</strong></td>
     <td><StatusBadge status={getDisplayStatus(update)} /></td>
-    <td>{update.event || "—"}</td>
+    <td>{update.event || "-"}</td>
     <td>{noteText(update, feedback.notes)}</td>
-    <td className="review-cell-feedback">{feedback.feedback || "—"}</td>
-    <td>{link ? <a className="table-source" href={link} target="_blank" rel="noreferrer">Open source ↗</a> : "—"}{relatedLinks.length > 0 && <small className="table-subtext">{relatedLinks.join(" · ")}</small>}</td>
+    <td className="review-cell-feedback">{feedback.feedback || "-"}</td>
+    <td>{link ? <a className="table-source" href={link} target="_blank" rel="noreferrer">Open source ↗</a> : "-"}{relatedLinks.length > 0 && <small className="table-subtext">{relatedLinks.join(" · ")}</small>}</td>
   </tr>;
 }
 
