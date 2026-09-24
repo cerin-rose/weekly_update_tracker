@@ -73,6 +73,7 @@ export function Dashboard() {
   const [workstream, setWorkstream] = useState<WorkstreamFilter>("All workstreams");
   const [status, setStatus] = useState<StatusFilter>("All statuses");
   const [search, setSearch] = useState("");
+  const [showDirectory, setShowDirectory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const hasInitializedMeetingDate = useRef(false);
@@ -107,6 +108,13 @@ export function Dashboard() {
     return () => { window.clearTimeout(initialRefresh); window.clearInterval(refreshTimer); };
   }, [refreshData]);
 
+  useEffect(() => {
+    function syncHashView() { setShowDirectory(window.location.hash === "#student-directory"); }
+    syncHashView();
+    window.addEventListener("hashchange", syncHashView);
+    return () => window.removeEventListener("hashchange", syncHashView);
+  }, []);
+
   const studentFor = (update: WeeklyUpdate) => update.studentId ? students.find((student) => student.id === update.studentId) : undefined;
   const normalizedSearch = search.trim().toLowerCase();
   const matchesFilters = (update: WeeklyUpdate) => {
@@ -116,6 +124,7 @@ export function Dashboard() {
   };
 
   const filteredUpdates = updates.filter(matchesFilters).sort((a, b) => (workstreamOrder[a.workstream] ?? 99) - (workstreamOrder[b.workstream] ?? 99) || (a.studentName || "Meeting-level").localeCompare(b.studentName || "Meeting-level") || b.submittedAt.localeCompare(a.submittedAt));
+  const directoryStudents = students.filter((student) => (team === "All teams" || student.programAffiliation === team) && (workstream === "All workstreams" || student.primaryWorkstream === workstream) && (!normalizedSearch || `${student.name} ${student.programAffiliation} ${student.leadershipRole}`.toLowerCase().includes(normalizedSearch)));
   function moveMeeting(direction: -1 | 1) {
     const index = availableMeetingDates.indexOf(meetingDate);
     const next = availableMeetingDates[index + direction];
@@ -123,13 +132,17 @@ export function Dashboard() {
   }
 
   return <main className="page-frame dashboard-page">
-    <header className="page-header dashboard-header"><h1>Meeting Review</h1></header>
+    <header className="page-header dashboard-header"><h1>{showDirectory ? "Students" : "Meeting Review"}</h1></header>
     {error && <div className="notice notice-error" role="alert"><div><strong>We couldn’t load the updates.</strong><p>{error}</p></div><button className="button button-secondary" type="button" onClick={() => void refreshData()}><RefreshCw size={15} /> Retry</button></div>}
 
-    <>
+    {showDirectory ? <section className="directory-section" aria-labelledby="students-heading">
+      <div className="section-heading directory-heading"><div><p className="eyebrow">Roster</p><h2 id="students-heading">Students</h2></div><span className="result-count">{loading ? "Loading..." : `${directoryStudents.length} students`}</span></div>
+      <div className="directory-filters"><label><span>Search</span><span className="input-with-icon"><Search size={16} /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search students" /></span></label><label><span>Team</span><select value={team} onChange={(event) => setTeam(event.target.value as TeamFilter)}>{teamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as WorkstreamFilter)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label></div>
+      <div className="directory-list">{loading ? <p className="loading-state">Loading students...</p> : directoryStudents.length ? directoryStudents.map((student) => <article className="directory-row" key={student.id}><div className="directory-student"><span className="owner-mark">{student.initials}</span><div><strong>{student.name}</strong><small>{student.programAffiliation}</small></div></div><p><span className="field-label">Role</span>{student.leadershipRole}</p><div><span className="field-label">Status</span><span className={`student-active ${student.active ? "is-active" : "is-inactive"}`}>{student.active ? "Active" : "Inactive"}</span></div><button className="button button-secondary" type="button" onClick={() => router.push(`/students/${student.id}`)}>View profile <ArrowRight size={15} /></button></article>) : <p className="empty-state">No students match these filters.</p>}</div>
+    </section> : <>
       <section className="filter-panel" aria-label="Meeting View filters"><div className="meeting-picker"><button className="icon-button" aria-label="Previous meeting" disabled={!availableMeetingDates.length || availableMeetingDates.indexOf(meetingDate) === availableMeetingDates.length - 1} onClick={() => moveMeeting(1)}><ArrowLeft size={16} /></button><label><span>Meeting</span><select value={meetingDate} onChange={(event) => setMeetingDate(event.target.value)}>{availableMeetingDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}<option value="all">All meetings</option></select></label><button className="icon-button" aria-label="Next meeting" disabled={!availableMeetingDates.length || meetingDate === availableMeetingDates[0]} onClick={() => moveMeeting(-1)}><ArrowRight size={16} /></button></div><label><span>Team</span><select value={team} onChange={(event) => setTeam(event.target.value as TeamFilter)}>{teamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as WorkstreamFilter)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)}>{statusOptions.map((option) => <option key={option} value={option}>{statusLabel(option)}</option>)}</select></label><label className="filter-search"><span>Search</span><span className="input-with-icon"><Search size={16} /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search student, task, or question" /></span></label></section>
       <div className="review-context"><span>{loading ? "Loading…" : `${filteredUpdates.length} updates`}</span><span>{meetingDate === "all" ? "All meetings" : formatDate(meetingDate)} · one row per update</span></div>
       <section className="review-list" aria-label="Meeting updates">{loading ? <div className="loading-state">Loading meeting updates…</div> : filteredUpdates.length ? <div className="review-table-wrap"><table className="review-table meeting-view-table"><caption className="sr-only">One row per update for the selected meeting</caption><thead><tr><th scope="col">Category</th><th scope="col">Person</th><th scope="col">Task / What they are working on</th><th scope="col">Status</th><th scope="col">Deadline / Meeting</th><th scope="col">Notes</th><th scope="col">Dr. Begdache feedback</th><th scope="col">Source</th></tr></thead><tbody>{filteredUpdates.map((update) => <MeetingUpdateRow key={update.id} update={update} student={studentFor(update)} onStudent={(studentId) => router.push(`/students/${studentId}`)} />)}</tbody></table></div> : <div className="empty-state">No updates match these filters.</div>}</section>
-    </>
+    </>}
   </main>;
 }

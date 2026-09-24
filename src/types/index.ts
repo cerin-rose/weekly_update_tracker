@@ -19,6 +19,7 @@ export interface Student {
   id: string;
   name: string;
   initials: string;
+  active: boolean;
   leadershipRole: string;
   programAffiliation: ProgramAffiliation;
   primaryWorkstream: Workstream;
