@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const maxDuration = 30;
 
 const cacheHeaders = {
   "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
@@ -13,18 +14,12 @@ function sourceCandidates() {
   return [...new Set([process.env.GOOGLE_APPS_SCRIPT_URL, defaultAppsScriptUrl].filter(Boolean))] as string[];
 }
 
-function cacheBustedUrl(sourceUrl: string) {
-  const url = new URL(sourceUrl);
-  url.searchParams.set("hub_refresh", String(Date.now()));
-  return url.toString();
-}
-
 export async function GET() {
   const failures: string[] = [];
 
   for (const appsScriptUrl of sourceCandidates()) {
     try {
-      const response = await fetch(cacheBustedUrl(appsScriptUrl), { cache: "no-store", signal: AbortSignal.timeout(15000), headers: { Accept: "application/json" } });
+      const response = await fetch(appsScriptUrl, { cache: "no-store", signal: AbortSignal.timeout(25000), headers: { Accept: "application/json" } });
       if (!response.ok) {
         failures.push(`${response.status}`);
         continue;
