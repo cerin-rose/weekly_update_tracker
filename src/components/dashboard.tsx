@@ -33,7 +33,9 @@ function sourceLink(update: WeeklyUpdate) {
 
 function splitFeedback(notes: string) {
   const match = notes.match(/Dr\.\s*Begdache feedback[\s\S]*/i);
-  return { notes: match ? notes.slice(0, match.index).trim() : notes, feedback: match?.[0]?.trim() ?? "" };
+  const rawFeedback = match?.[0]?.replace(/^Dr\.\s*Begdache feedback\s*:?[\s-]*/i, "").trim() ?? "";
+  const feedback = rawFeedback === "." ? "" : rawFeedback.replace(/^and follow-up action\.?$/i, "Follow-up action.");
+  return { notes: match ? notes.slice(0, match.index).trim() : notes, feedback };
 }
 
 function taskText(update: WeeklyUpdate) {
