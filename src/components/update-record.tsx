@@ -36,6 +36,7 @@ export function UpdateRecord({ update, compact = false }: UpdateRecordProps) {
       <section className="record-field record-question"><h4>Question / discussion point</h4><p>{detailValue(update.questionForDrLina, "No question submitted")}</p></section>
       <section className="record-field record-support"><h4>Support requested</h4><p>{detailValue(update.supportNeeded, "No support requested")}</p></section>
       {update.task && <section className="record-field record-task"><h4>Task</h4><p>{update.task}</p><small>{update.taskStatus || "Task status not provided"}</small></section>}
+      {update.meetingNotes && <section className="record-field record-notes"><h4>Meeting notes / feedback</h4><p>{update.meetingNotes}</p></section>}
     </div>
 
     <div className="record-metadata"><div><strong>Collaborators</strong><span>{update.collaborators.length ? update.collaborators.join(" · ") : "Working independently"}</span></div>{update.project && <div><strong>Project</strong><span>{update.project}</span></div>}{update.event && <div><strong>Event</strong><span>{update.event}</span></div>}</div>

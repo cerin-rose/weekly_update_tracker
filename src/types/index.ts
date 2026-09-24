@@ -43,6 +43,7 @@ export interface WeeklyUpdate {
   taskStatus: string;
   project: string;
   event: string;
+  meetingNotes: string;
   sourceRecordId: string;
   sourceDocument: string;
   sourceSection: string;

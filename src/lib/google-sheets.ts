@@ -135,6 +135,7 @@ function updatesFromRows(rows: GoogleSheetRow[], students: Student[]): WeeklyUpd
       taskStatus: value(row, "Task status", "Task Status"),
       project: value(row, "Project"),
       event: value(row, "Event"),
+      meetingNotes: value(row, "Meeting notes", "Meeting Notes", "Notes"),
       sourceRecordId,
       sourceDocument: value(row, "Source document", "Source Document", "Document"),
       sourceSection: value(row, "Source section", "Source Section", "Section"),
