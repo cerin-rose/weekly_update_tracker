@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ArrowRight, RefreshCw, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getDisplayStatus } from "@/lib/display-status";
 import { loadGoogleSheetState } from "@/lib/google-sheets";
 import type { ProgramAffiliation, Student, UpdateStatus, WeeklyUpdate, Workstream } from "@/types";
@@ -65,6 +65,7 @@ function MeetingUpdateRow({ update, student, onStudent }: { update: WeeklyUpdate
 }
 
 export function Dashboard() {
+  const pathname = usePathname();
   const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
   const [updates, setUpdates] = useState<WeeklyUpdate[]>([]);
@@ -110,11 +111,11 @@ export function Dashboard() {
   }, [refreshData]);
 
   useEffect(() => {
-    function syncHashView() { setShowDirectory(window.location.hash === "#student-directory"); }
+    function syncHashView() { setShowDirectory(pathname === "/" && window.location.hash === "#student-directory"); }
     syncHashView();
     window.addEventListener("hashchange", syncHashView);
     return () => window.removeEventListener("hashchange", syncHashView);
-  }, []);
+  }, [pathname]);
 
   const studentFor = (update: WeeklyUpdate) => update.studentId ? students.find((student) => student.id === update.studentId) : undefined;
   const normalizedSearch = search.trim().toLowerCase();
