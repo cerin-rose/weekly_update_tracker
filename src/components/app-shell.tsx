@@ -10,7 +10,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const currentView = pathname;
   const navigation = [
     { href: "/", label: "Meeting Review", icon: House },
-    { href: "/#student-directory", label: "Students", icon: Users },
+    { href: "/students", label: "Students", icon: Users },
   ];
 
   return (
@@ -25,9 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="topnav" aria-label="Main navigation">
-          {navigation.map(({ href, label, icon: Icon }) => href.includes("#")
-            ? <a className="nav-link" href={href} key={href}><Icon size={17} />{label}</a>
-            : <Link className={`nav-link ${currentView === href ? "active" : ""}`} href={href} key={href}><Icon size={17} />{label}</Link>)}
+          {navigation.map(({ href, label, icon: Icon }) => <Link className={`nav-link ${currentView === href ? "active" : ""}`} href={href} key={href}><Icon size={17} />{label}</Link>)}
         </nav>
 
       </header>

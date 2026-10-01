@@ -111,7 +111,7 @@ export function Dashboard() {
   }, [refreshData]);
 
   useEffect(() => {
-    function syncHashView() { setShowDirectory(pathname === "/" && window.location.hash === "#student-directory"); }
+    function syncHashView() { setShowDirectory(pathname === "/students" || (pathname === "/" && window.location.hash === "#student-directory")); }
     syncHashView();
     window.addEventListener("hashchange", syncHashView);
     return () => window.removeEventListener("hashchange", syncHashView);
