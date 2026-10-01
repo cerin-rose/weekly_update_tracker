@@ -39,6 +39,94 @@ function doGet() {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function jsonResponse(payload) {
+  return ContentService
+    .createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e && e.postData && e.postData.contents ? e.postData.contents : "{}");
+    if (body.action !== "appendMeetingRows") return jsonResponse({ ok: false, error: "Unsupported bridge action." });
+
+    const expectedToken = PropertiesService.getScriptProperties().getProperty("IMPORT_WRITE_TOKEN");
+    if (!expectedToken) return jsonResponse({ ok: false, error: "IMPORT_WRITE_TOKEN is not configured in Apps Script." });
+    if (body.token !== expectedToken) return jsonResponse({ ok: false, error: "Invalid import token." });
+    if (!Array.isArray(body.rows) || !body.rows.length) return jsonResponse({ ok: false, error: "No meeting rows were supplied." });
+
+    const sheet = spreadsheet().getSheetByName("Meeting Database");
+    if (!sheet || sheet.getLastColumn() < 1) return jsonResponse({ ok: false, error: "Meeting Database sheet or headers were not found." });
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      const values = body.rows.map(function(row) {
+        return headers.map(function(header) { return importValue(row, header); });
+      });
+      sheet.getRange(sheet.getLastRow() + 1, 1, values.length, headers.length).setValues(values);
+      return jsonResponse({ ok: true, count: values.length });
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (error) {
+    return jsonResponse({ ok: false, error: String(error && error.message ? error.message : error) });
+  }
+}
+
+function importValue(row, header) {
+  const normalized = String(header || "").trim().toLowerCase();
+  const aliases = {
+    "timestamp": "__timestamp",
+    "submitted at": "__timestamp",
+    "student name": "Student name",
+    "team / program": "Team / program",
+    "program": "Team / program",
+    "role": "Role",
+    "meeting title": "Meeting title",
+    "week / meeting date": "Week / meeting date",
+    "meeting date": "Week / meeting date",
+    "workstream": "Workstream",
+    "what did you complete this week?": "What did you complete this week?",
+    "completed this week": "What did you complete this week?",
+    "what are you currently working on?": "What are you currently working on?",
+    "currently working on": "What are you currently working on?",
+    "what are your next steps?": "What are your next steps?",
+    "next steps": "What are your next steps?",
+    "what is still pending or needs follow-up?": "What are your next steps?",
+    "pending / follow-up": "What are your next steps?",
+    "what question do you have for dr. lina?": "What question do you have for Dr. Lina?",
+    "question for dr. lina": "What question do you have for Dr. Lina?",
+    "what support do you need?": "What support do you need?",
+    "support needed": "What support do you need?",
+    "who did you collaborate with?": "Who did you collaborate with?",
+    "collaborators": "Who did you collaborate with?",
+    "add any relevant links or file names": "Add any relevant links or file names",
+    "relevant links / files": "Add any relevant links or file names",
+    "current status": "Current status",
+    "status": "Current status",
+    "project": "Project",
+    "task": "Task",
+    "task status": "Task status",
+    "event": "Event",
+    "deadline / meeting": "Event",
+    "meeting notes": "Meeting notes",
+    "notes": "Meeting notes",
+    "source record id": "Source record ID",
+    "source document": "Source document",
+    "source": "Source document",
+    "source section": "Source section",
+    "dr. begdache feedback": "Dr. Begdache feedback",
+    "attribution note": "Attribution Note"
+  };
+  const key = aliases[normalized] || header;
+  if (key === "__timestamp") {
+    return row["Week / meeting date"] ? String(row["Week / meeting date"]) + "T12:00:00.000Z" : new Date().toISOString();
+  }
+  return row[key] === undefined || row[key] === null ? "" : row[key];
+}
+
 function spreadsheet() {
   return SpreadsheetApp.openById(SPREADSHEET_ID);
 }

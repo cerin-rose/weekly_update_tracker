@@ -17,6 +17,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - `/submit` - Sends students to the Google Form weekly update intake
 - `/students/[studentId]` - Source-student contribution history
 - `/operations` - Google Sheet task-database setup guidance
+- `/import` - Converts a reviewed Word meeting document into Meeting Database rows
 
 ## Validate
 
@@ -46,6 +47,19 @@ The Apps Script web app reads the linked response Sheet and returns JSON rows. V
 The importer creates normalized tabs for the 20 students, 19 roles, 4 meetings, 88 updates, 45 tasks, 14 projects, 7 events, 26 resources, 20 outreach contacts, 19 outreach interactions, 4 manuscripts, 2 fundraisers, and 15 social-media records. It preserves the Google Form response tab and includes new rows from `Form Responses 1` or `Form Responses` in the bridge response.
 
 If the source seed changes, regenerate the Apps Script with `node scripts/generate-google-apps-script.mjs` before replacing the Apps Script editor contents.
+
+## Word document importer
+
+The `Convert to sheet` page is a review-first importer. It reads a `.docx`, uses the configured language model to create rows matching Meeting Review, shows a selectable preview, and only then appends approved rows to `Meeting Database`. It does not modify `Form Responses 1`.
+
+To enable it:
+
+1. In Apps Script, paste the current `google-apps-script/BridgeCode.gs` and add a Script Property named `IMPORT_WRITE_TOKEN` with a long random value. Redeploy the web app after saving.
+2. Add the same value to Vercel as `GOOGLE_APPS_SCRIPT_WRITE_TOKEN`.
+3. Add `OPENAI_API_KEY` to Vercel. Optionally set `OPENAI_MODEL`; the default is `gpt-4o-mini`.
+4. Redeploy Vercel. The app keeps the key and write token on the server; neither is sent to the browser.
+
+The source Drive/Docs URL and selected meeting date are stored on every imported row. Red Word text is marked during extraction so the model can place Dr. Begdache feedback in the feedback field. If the required server settings are absent, the page shows a configuration error instead of pretending that rows were saved.
 
 ## Development note
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { House, Sprout, Users } from "lucide-react";
+import { FileSpreadsheet, House, Sprout, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -11,6 +11,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigation = [
     { href: "/", label: "Meeting Review", icon: House },
     { href: "/students", label: "Students", icon: Users },
+    { href: "/import", label: "Convert to sheet", icon: FileSpreadsheet },
   ];
 
   return (
