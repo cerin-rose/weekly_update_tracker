@@ -11,7 +11,7 @@ const cacheHeaders = {
 const defaultAppsScriptUrl = "https://script.google.com/macros/s/AKfycby72N0LTNQ8-f5sCguzf0BvbvW87ngwG5wdy8XaNhaZUl5AFKnn_-oVfwYhM5gpbT-t/exec";
 
 function sourceCandidates() {
-  return [...new Set([process.env.GOOGLE_APPS_SCRIPT_URL, defaultAppsScriptUrl].filter(Boolean))] as string[];
+  return [...new Set([defaultAppsScriptUrl, process.env.GOOGLE_APPS_SCRIPT_URL].filter(Boolean))] as string[];
 }
 
 export async function GET() {
