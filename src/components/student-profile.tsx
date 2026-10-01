@@ -1,13 +1,12 @@
 "use client";
 
-import { ArrowLeft, ChevronDown, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { getDisplayStatus } from "@/lib/display-status";
 import { loadGoogleSheetState } from "@/lib/google-sheets";
 import type { Student, UpdateStatus, WeeklyUpdate, Workstream } from "@/types";
 import { StatusBadge } from "@/components/status-badge";
-import { UpdateRecord } from "@/components/update-record";
 
 const workstreamOptions: Array<"All workstreams" | Workstream> = ["All workstreams", "Research", "Education", "Outreach", "Communications", "Fundraising", "Manuscript", "Social Media", "Operations", "Website", "Other"];
 const statusOptions: Array<"All statuses" | UpdateStatus> = ["All statuses", "on-track", "question", "needs-help", "blocked"];
@@ -25,11 +24,12 @@ function profileIdMatches(student: Student, requestedId: string) {
   return student.id === requestedId || requestedId === `sheet-student-${nameSlug}` || requestedId === `student-${nameSlug}`;
 }
 
-function HistoryEntry({ update, expanded, onToggle }: { update: WeeklyUpdate & { status: UpdateStatus }; expanded: boolean; onToggle: () => void }) {
-  return <article className="history-entry">
-    <button className="history-entry-header" type="button" aria-expanded={expanded} onClick={onToggle}><span><strong>{formatDate(update.meetingDate)}</strong><small>{update.workstream} · {update.completed || update.nextSteps || "No update summary"}</small></span><span className="history-entry-meta"><StatusBadge status={update.status} /><ChevronDown size={18} aria-hidden="true" /></span></button>
-    {expanded && <div className="history-entry-detail"><UpdateRecord update={update} /></div>}
-  </article>;
+function sourceLink(update: WeeklyUpdate) {
+  return [update.sourceDocument, ...update.resourceLinks].join(" ").match(/https?:\/\/[^\s|]+/i)?.[0] ?? "";
+}
+
+function cellValue(value: string) {
+  return value.trim() || "-";
 }
 
 export function StudentProfile({ studentId }: { studentId: string }) {
@@ -39,7 +39,6 @@ export function StudentProfile({ studentId }: { studentId: string }) {
   const [toDate, setToDate] = useState("");
   const [workstream, setWorkstream] = useState<"All workstreams" | Workstream>("All workstreams");
   const [status, setStatus] = useState<"All statuses" | UpdateStatus>("All statuses");
-  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -71,14 +70,11 @@ export function StudentProfile({ studentId }: { studentId: string }) {
 
   const history = updates.map((update) => ({ ...update, status: getDisplayStatus(update) })).sort((a, b) => b.meetingDate.localeCompare(a.meetingDate) || b.submittedAt.localeCompare(a.submittedAt));
   const visibleHistory = history.filter((update) => (!fromDate || update.meetingDate >= fromDate) && (!toDate || update.meetingDate <= toDate) && (workstream === "All workstreams" || update.workstream === workstream) && (status === "All statuses" || update.status === status));
-  const questions = history.filter((update) => update.questionForDrLina || update.supportNeeded);
-  const openTasks = history.filter((update) => update.task && update.taskStatus.toLowerCase() !== "completed");
   const currentFocus = student.currentFocus === "No current focus submitted." ? "" : student.currentFocus;
 
   return <main className="page-frame profile-page">
     <header className="profile-titlebar"><Link className="profile-back-link" href="/students"><ArrowLeft size={15} /> Students</Link><div className="profile-identity"><span className="owner-mark owner-mark-large">{student.initials}</span><div><h1>{student.name}</h1><p>{student.programAffiliation} · {student.leadershipRole}</p></div></div></header>
     {currentFocus && <section className="profile-focus"><strong>Current focus</strong><p>{currentFocus}</p></section>}
-    {(questions.length > 0 || openTasks.length > 0) && <div className="profile-overview">{questions.length > 0 && <section><div className="section-heading"><div><p className="eyebrow">Questions and support</p><h2>Items to discuss</h2></div><span className="result-count">{questions.length}</span></div><ul className="simple-list">{questions.slice(0, 5).map((update) => <li key={update.id}><strong>{formatDate(update.meetingDate)}</strong><span>{update.questionForDrLina || update.supportNeeded}</span></li>)}</ul></section>}{openTasks.length > 0 && <section><div className="section-heading"><div><p className="eyebrow">Tasks</p><h2>Open work</h2></div><span className="result-count">{openTasks.length}</span></div><ul className="simple-list">{openTasks.slice(0, 5).map((update) => <li key={update.id}><strong>{update.taskStatus || "Open"}</strong><span>{update.task}</span></li>)}</ul></section>}</div>}
-    <section className="history-section"><div className="section-heading"><div><p className="eyebrow">Portfolio</p><h2>Contributions</h2></div><span className="result-count">{visibleHistory.length} shown</span></div><div className="history-filters"><label><span>From date</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label><label><span>To date</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as typeof workstream)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>{statusOptions.map((option) => <option key={option} value={option}>{option === "All statuses" ? option : statusLabel(option)}</option>)}</select></label></div>{visibleHistory.length ? <div className="history-list">{visibleHistory.map((update) => <HistoryEntry key={update.id} update={update} expanded={expandedHistoryId === update.id} onToggle={() => setExpandedHistoryId((current) => current === update.id ? null : update.id)} />)}</div> : <p className="empty-state">No contribution history matches these filters.</p>}</section>
+    <section className="history-section"><div className="section-heading"><div><p className="eyebrow">Portfolio</p><h2>Contributions</h2></div><span className="result-count">{visibleHistory.length} shown</span></div><div className="history-filters"><label><span>From date</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label><label><span>To date</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as typeof workstream)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>{statusOptions.map((option) => <option key={option} value={option}>{option === "All statuses" ? option : statusLabel(option)}</option>)}</select></label></div>{visibleHistory.length ? <div className="profile-table-wrap"><table className="profile-contribution-table"><caption className="sr-only">All contributions for {student.name}</caption><thead><tr><th scope="col">Date</th><th scope="col">Workstream</th><th scope="col">Completed</th><th scope="col">Current work</th><th scope="col">Next steps / task</th><th scope="col">Status</th><th scope="col">Deadline / meeting</th><th scope="col">Questions / support</th><th scope="col">Notes / collaborators</th><th scope="col">Feedback</th><th scope="col">Source</th></tr></thead><tbody>{visibleHistory.map((update) => { const link = sourceLink(update); return <tr key={update.id}><td>{formatDate(update.meetingDate)}</td><td className="profile-table-workstream">{cellValue(update.workstream)}</td><td>{cellValue(update.completed)}</td><td>{cellValue(update.workingOn)}</td><td>{cellValue(update.nextSteps || update.task)}</td><td><StatusBadge status={update.status} />{update.taskStatus && <small className="profile-table-subtext">Task: {update.taskStatus}</small>}</td><td>{cellValue(update.event)}</td><td>{cellValue([update.questionForDrLina, update.supportNeeded].filter(Boolean).join(" · "))}</td><td>{cellValue([update.meetingNotes, update.collaborators.length ? `Collaborators: ${update.collaborators.join("; ")}` : ""].filter(Boolean).join(" · "))}</td><td>{cellValue(update.attributionNote)}</td><td>{link ? <a className="table-source" href={link} target="_blank" rel="noreferrer">Open source ↗</a> : cellValue(update.sourceRecordId)}</td></tr>; })}</tbody></table></div> : <p className="empty-state">No contributions match these filters.</p>}</section>
   </main>;
 }
