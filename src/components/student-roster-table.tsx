@@ -11,7 +11,6 @@ export function StudentRosterTable({ students, onStudent }: { students: Student[
           <th scope="col">Student</th>
           <th scope="col">Program</th>
           <th scope="col">Role</th>
-          <th scope="col">Workstream</th>
           <th scope="col">Status</th>
         </tr>
       </thead>
@@ -24,7 +23,6 @@ export function StudentRosterTable({ students, onStudent }: { students: Student[
           </td>
           <td>{student.programAffiliation}</td>
           <td>{student.leadershipRole}</td>
-          <td>{student.primaryWorkstream}</td>
           <td><span className={`student-active ${student.active ? "is-active" : "is-inactive"}`}>{student.active ? "Active" : "Inactive"}</span></td>
         </tr>)}
       </tbody>
