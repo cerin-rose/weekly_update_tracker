@@ -48,6 +48,7 @@ function jsonResponse(payload) {
 function doPost(e) {
   try {
     const body = JSON.parse(e && e.postData && e.postData.contents ? e.postData.contents : "{}");
+    if (body.action === "updateMeetingRow") return updateMeetingRow(body);
     if (body.action !== "appendMeetingRows") return jsonResponse({ ok: false, error: "Unsupported bridge action." });
 
     const expectedToken = PropertiesService.getScriptProperties().getProperty("IMPORT_WRITE_TOKEN");
@@ -73,6 +74,53 @@ function doPost(e) {
   } catch (error) {
     return jsonResponse({ ok: false, error: String(error && error.message ? error.message : error) });
   }
+}
+
+function updateMeetingRow(body) {
+  const expectedToken = PropertiesService.getScriptProperties().getProperty("IMPORT_WRITE_TOKEN");
+  if (!expectedToken) return jsonResponse({ ok: false, error: "IMPORT_WRITE_TOKEN is not configured in Apps Script." });
+  if (body.token !== expectedToken) return jsonResponse({ ok: false, error: "Invalid update token." });
+  if (!body.sourceRecordId || !body.updates || typeof body.updates !== "object") return jsonResponse({ ok: false, error: "A source record ID and changes are required." });
+
+  const sheet = spreadsheet().getSheetByName("Meeting Database");
+  if (!sheet || sheet.getLastRow() < 2) return jsonResponse({ ok: false, error: "Meeting Database is empty or unavailable." });
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+  const sourceColumn = headerIndex(headers, ["Source record ID", "Source Record Id"]);
+  if (sourceColumn < 0) return jsonResponse({ ok: false, error: "Source record ID column was not found." });
+
+  const values = sheet.getRange(2, sourceColumn + 1, sheet.getLastRow() - 1, 1).getDisplayValues();
+  const match = values.findIndex(function(row) { return String(row[0]).trim() === String(body.sourceRecordId).trim(); });
+  if (match < 0) return jsonResponse({ ok: false, error: "The source record could not be found." });
+
+  const rowNumber = match + 2;
+  const fields = [
+    { key: "task", headers: ["Task"] },
+    { key: "status", headers: ["Current status", "Status"] },
+    { key: "notes", headers: ["Meeting notes", "Meeting Notes", "Notes"] },
+    { key: "feedback", headers: ["Dr. Begdache feedback", "Attribution Note", "Attribution note"] }
+  ];
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    let updated = 0;
+    fields.forEach(function(field) {
+      if (!Object.prototype.hasOwnProperty.call(body.updates, field.key)) return;
+      const column = headerIndex(headers, field.headers);
+      if (column < 0) return;
+      sheet.getRange(rowNumber, column + 1).setValue(body.updates[field.key] == null ? "" : String(body.updates[field.key]));
+      updated += 1;
+    });
+    if (!updated) return jsonResponse({ ok: false, error: "None of the editable columns were found." });
+    return jsonResponse({ ok: true, sourceRecordId: body.sourceRecordId, updated: updated });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function headerIndex(headers, wantedHeaders) {
+  const wanted = wantedHeaders.map(function(header) { return String(header).trim().toLowerCase(); });
+  return headers.findIndex(function(header) { return wanted.indexOf(String(header).trim().toLowerCase()) >= 0; });
 }
 
 function importValue(row, header) {
