@@ -235,6 +235,19 @@ h3 { margin-bottom: 8px; font-size: 1.1rem; }
 .profile-focus { display: flex; align-items: center; justify-content: space-between; gap: 25px; margin-bottom: 22px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-sage); }
 .profile-focus p:last-child { max-width: 760px; margin-bottom: 0; color: var(--forest-dark); font-size: 16px; }
 .profile-overview { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
+.profile-titlebar { display: grid; gap: 18px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.profile-back-link { display: inline-flex; align-items: center; gap: 7px; width: fit-content; color: var(--muted); font-size: 12px; font-weight: 700; }
+.profile-back-link:hover { color: var(--forest-dark); text-decoration: none; }
+.profile-titlebar .profile-identity { gap: 13px; }
+.profile-titlebar .profile-identity h1 { margin-bottom: 3px; font-size: 2rem; }
+.profile-titlebar .owner-mark-large { width: 44px; height: 44px; font-size: 14px; }
+.profile-focus { display: grid; grid-template-columns: 130px minmax(0, 1fr); align-items: start; gap: 18px; margin-bottom: 22px; padding: 15px 0; border-top: 1px solid var(--line); border-right: 0; border-bottom: 1px solid var(--line); border-left: 0; border-radius: 0; background: transparent; }
+.profile-focus strong { color: var(--sage); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+.profile-focus p:last-child { max-width: 760px; color: var(--forest-dark); font-size: 14px; }
+.profile-overview { gap: 28px; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.profile-overview > section, .profile-page .history-section { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.profile-page .history-section { padding-top: 4px; }
+.profile-page .history-section > .section-heading { margin-bottom: 18px; }
 .simple-list, .guidance-list { display: grid; gap: 0; margin: 16px 0 0; padding: 0; list-style: none; }
 .simple-list li { display: grid; gap: 4px; padding: 11px 0; border-top: 1px solid var(--line); }
 .simple-list strong { color: var(--forest); font-size: 11px; }
