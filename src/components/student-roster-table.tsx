@@ -19,7 +19,6 @@ export function StudentRosterTable({ students, onStudent }: { students: Student[
         {students.map((student) => <tr key={student.id}>
           <td>
             <span className="directory-student">
-              <span className="owner-mark" aria-hidden="true">{student.initials}</span>
               <button className="student-name-link" type="button" aria-label={`Open ${student.name} profile`} onClick={() => onStudent(student.id)}>{student.name}</button>
             </span>
           </td>
