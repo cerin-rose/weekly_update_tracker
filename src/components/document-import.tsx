@@ -114,7 +114,7 @@ export function DocumentImport() {
       <div className="sheet-toolbar">
         <div><strong id="import-form-heading">Import rows</strong><span>Choose the document, date, and source link</span></div>
       </div>
-      <div className="import-section-label"><span>Source details</span><small>These values are copied to every imported row</small></div>
+      <div className="import-section-label"><span>Source details</span></div>
       <form className="import-form" onSubmit={previewDocument}>
         <label className="import-file-field"><span>Word document</span><span className="file-picker"><strong>{file?.name || "Choose a .docx file"}</strong><input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(event) => setFile(event.target.files?.[0] || null)} /></span></label>
         <label><span>Meeting date</span><input type="date" value={meetingDate} onChange={(event) => setMeetingDate(event.target.value)} required /></label>
