@@ -44,6 +44,9 @@ h3 { margin-bottom: 8px; font-size: 1.1rem; }
 
 .page-frame { width: min(calc(100% - 48px), 1240px); margin: 0 auto; padding: 44px 0 72px; }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 28px; margin-bottom: 35px; }
+.review-titlebar { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.review-titlebar h1 { margin: 0; font-size: 1.35rem; letter-spacing: -.02em; }
+.review-titlebar span { color: var(--muted); font-size: 12px; }
 .page-description { max-width: 700px; margin-bottom: 0; color: var(--muted); font-size: 17px; line-height: 1.55; }
 .eyebrow { margin-bottom: 9px; color: var(--sage); font-size: 11px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
 .source-status { display: inline-flex; align-items: center; gap: 8px; flex: none; padding: 9px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--surface); font-size: 12px; font-weight: 650; }
@@ -78,7 +81,7 @@ h3 { margin-bottom: 8px; font-size: 1.1rem; }
 .input-with-icon { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--sage); background: var(--surface); }
 .input-with-icon input { min-width: 0; width: 100%; min-height: 34px; padding: 0; border: 0; outline: 0; color: var(--charcoal); background: transparent; font-size: 13px; }
 .filter-search { min-width: 0; }
-.review-context { display: flex; justify-content: space-between; gap: 16px; margin: 18px 1px 12px; color: var(--muted); font-size: 12px; }
+.review-context { display: flex; justify-content: space-between; gap: 16px; margin: 15px 1px 10px; color: var(--muted); font-size: 12px; }
 .review-context span:first-child { color: var(--forest-dark); font-weight: 750; }
 .review-tabs { display: flex; gap: 5px; width: fit-content; max-width: 100%; margin-bottom: 12px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-sage); overflow-x: auto; }
 .review-tabs button { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; font-size: 12px; font-weight: 750; white-space: nowrap; }
