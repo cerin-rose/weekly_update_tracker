@@ -18,23 +18,25 @@ export async function GET() {
   const failures: string[] = [];
 
   for (const appsScriptUrl of sourceCandidates()) {
-    try {
-      const response = await fetch(appsScriptUrl, { cache: "no-store", signal: AbortSignal.timeout(25000), headers: { Accept: "application/json" } });
-      if (!response.ok) {
-        failures.push(`${response.status}`);
-        continue;
-      }
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const response = await fetch(appsScriptUrl, { cache: "no-store", signal: AbortSignal.timeout(7000), headers: { Accept: "application/json" } });
+        if (!response.ok) {
+          failures.push(`${response.status}`);
+          continue;
+        }
 
-      const payload = await response.json() as { rows?: Array<Record<string, unknown>>; updates?: Array<Record<string, unknown>>; students?: Array<Record<string, unknown>> };
-      const rows = (payload.updates?.length ? payload.updates : payload.rows ?? []).map((row, index) => ({ ...row, __rowNumber: String(index + 2) }));
-      const students = (payload.students ?? []).map((row, index) => ({ ...row, __rowNumber: String(index + 2) }));
-      if (!rows.length && !students.length) {
-        failures.push("empty source");
-        continue;
+        const payload = await response.json() as { rows?: Array<Record<string, unknown>>; updates?: Array<Record<string, unknown>>; students?: Array<Record<string, unknown>> };
+        const rows = (payload.updates?.length ? payload.updates : payload.rows ?? []).map((row, index) => ({ ...row, __rowNumber: String(index + 2) }));
+        const students = (payload.students ?? []).map((row, index) => ({ ...row, __rowNumber: String(index + 2) }));
+        if (!rows.length && !students.length) {
+          failures.push("empty source");
+          continue;
+        }
+        return NextResponse.json({ rows, students, source: "Google Sheets" }, { headers: cacheHeaders });
+      } catch (error) {
+        failures.push(error instanceof Error ? error.message : `request failed (attempt ${attempt})`);
       }
-      return NextResponse.json({ rows, students, source: "Google Sheets" }, { headers: cacheHeaders });
-    } catch (error) {
-      failures.push(error instanceof Error ? error.message : "request failed");
     }
   }
 
