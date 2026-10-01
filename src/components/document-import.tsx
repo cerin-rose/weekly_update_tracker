@@ -112,7 +112,7 @@ export function DocumentImport() {
 
     <section className="import-form-panel" aria-labelledby="import-form-heading">
       <div className="sheet-toolbar">
-        <div><strong id="import-form-heading">Import rows</strong><span>Choose the document, date, and source link</span></div>
+        <div><strong id="import-form-heading">Import rows</strong></div>
       </div>
       <div className="import-section-label"><span>Source details</span></div>
       <form className="import-form" onSubmit={previewDocument}>
