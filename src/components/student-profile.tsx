@@ -65,7 +65,7 @@ export function StudentProfile({ studentId }: { studentId: string }) {
     return () => { window.clearTimeout(initialRefresh); window.clearInterval(refreshTimer); };
   }, [refreshData]);
 
-  if (loading) return <main className="page-frame profile-page"><p className="loading-state">Loading student history from Google Sheets…</p></main>;
+  if (loading) return <main className="page-frame profile-page"><p className="loading-state">Loading profile…</p></main>;
   if (error) return <main className="page-frame profile-page"><div className="notice notice-error" role="alert"><div><strong>Student history could not be loaded.</strong><p>{error}</p></div><button className="button button-secondary" type="button" onClick={() => void refreshData()}><RefreshCw size={15} /> Retry</button></div></main>;
   if (!student) return <main className="page-frame profile-page"><div className="notice notice-error"><div><strong>This student is not in the current roster.</strong><p>Student profiles use only canonical names returned by Google Sheets.</p></div><Link className="button button-secondary" href="/students">Back to directory</Link></div></main>;
 
