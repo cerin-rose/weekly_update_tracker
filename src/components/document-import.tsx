@@ -104,18 +104,21 @@ export function DocumentImport() {
   return <main className="page-frame import-page">
     <header className="page-header import-header">
       <div>
-        <p className="eyebrow">Meeting Database</p>
-        <h1>Convert a meeting document</h1>
-        <p className="page-description">Turn one Word document into reviewable rows using the same format as Meeting Review. Nothing is saved until you approve the preview.</p>
+        <p className="eyebrow">Meeting Database / Import</p>
+        <h1>Add rows from a meeting document</h1>
+        <p className="page-description">Upload a document, review the generated rows, and save the ones that belong in the Meeting Database.</p>
       </div>
-      <FileText className="page-header-icon" size={26} />
     </header>
 
     {error && <div className="notice notice-error" role="alert"><AlertCircle size={18} /><div><strong>Import needs attention</strong><p>{error}</p></div></div>}
     {success && <div className="notice notice-success" role="status"><CheckCircle2 size={18} /><div><strong>Saved</strong><p>{success}</p></div></div>}
 
     <section className="import-form-panel" aria-labelledby="import-form-heading">
-      <div className="section-heading"><div><p className="eyebrow">Step 1</p><h2 id="import-form-heading">Choose the source</h2></div><span className="import-source-note">Source links are stored with each row</span></div>
+      <div className="sheet-toolbar">
+        <div><strong>New import</strong><span>Source details for the rows being added</span></div>
+        <span className="sheet-toolbar-meta">Step 1 of 2</span>
+      </div>
+      <div className="import-section-label"><span id="import-form-heading">Source details</span><small>Source links are stored with each row</small></div>
       <form className="import-form" onSubmit={previewDocument}>
         <label className="import-file-field"><span>Word document</span><span className="file-picker"><Upload size={16} /><strong>{file?.name || "Choose a .docx file"}</strong><input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(event) => setFile(event.target.files?.[0] || null)} /></span><small>The document is read for headings, people, tasks, dates, and feedback.</small></label>
         <label><span>Meeting / week date</span><input type="date" value={meetingDate} onChange={(event) => setMeetingDate(event.target.value)} required /></label>
@@ -125,7 +128,7 @@ export function DocumentImport() {
     </section>
 
     {rows.length > 0 && <section className="import-preview" aria-labelledby="import-preview-heading">
-      <div className="section-heading import-preview-heading"><div><p className="eyebrow">Step 2</p><h2 id="import-preview-heading">Review before saving</h2></div><div className="import-preview-actions"><span className="result-count">{selectedCount} of {rows.length} selected</span><button className="button button-primary" type="button" onClick={() => void saveRows()} disabled={saving}>{saving ? <><LoaderCircle className="spin-icon" size={15} /> Saving...</> : <><Save size={15} /> Save selected rows</>}</button></div></div>
+      <div className="sheet-toolbar import-preview-heading"><div><strong id="import-preview-heading">Review rows</strong><span>Check the generated values before saving</span></div><div className="import-preview-actions"><span className="result-count">{selectedCount} of {rows.length} selected</span><button className="button button-primary" type="button" onClick={() => void saveRows()} disabled={saving}>{saving ? <><LoaderCircle className="spin-icon" size={15} /> Saving...</> : <><Save size={15} /> Save selected rows</>}</button></div></div>
       <p className="import-help">Check ownership, workstream, status, deadline, feedback, and source. Uncheck anything that needs correction before saving.</p>
       <div className="review-list import-review-list"><div className="review-table-wrap"><table className="review-table meeting-view-table import-table"><caption className="sr-only">Rows generated from the Word document</caption><thead><tr><th scope="col"><input type="checkbox" aria-label="Select all rows" checked={allSelected} onChange={toggleAll} /></th><th scope="col">Category</th><th scope="col">Person</th><th scope="col">Task / What they are working on</th><th scope="col">Status</th><th scope="col">Deadline / Meeting</th><th scope="col">Notes</th><th scope="col">Dr. Begdache feedback</th><th scope="col">Source</th></tr></thead><tbody>{rows.map((row, index) => { const link = sourceUrl(row); return <tr key={`${row["Source record ID"] || index}`} className={!row["Student name"] ? "review-row-meeting" : undefined}><td><input type="checkbox" aria-label={`Select row ${index + 1}`} checked={selected.has(index)} onChange={() => toggleRow(index)} /></td><td className="review-cell-workstream">{row.Workstream || "Other"}</td><td>{row["Student name"] || <span className="meeting-level-label">Meeting-level</span>}</td><td><strong className="meeting-task">{row.Task || row["What are your next steps?"] || row["What are you currently working on?"] || "-"}</strong></td><td>{row["Current status"] || "On track"}</td><td>{row.Event || "-"}</td><td>{row["Meeting notes"] || "-"}</td><td className="review-cell-feedback">{row["Dr. Begdache feedback"] || "-"}</td><td>{link ? <a className="table-source" href={link} target="_blank" rel="noreferrer">{sourceLabel(row)}</a> : "-"}</td></tr>; })}</tbody></table></div></div>
     </section>}
