@@ -275,6 +275,7 @@ h3 { margin-bottom: 8px; font-size: 1.1rem; }
 .profile-contribution-table th:nth-child(6), .profile-contribution-table td:nth-child(6) { width: 105px; }
 .profile-table-workstream { color: var(--forest); font-weight: 750; }
 .profile-table-subtext { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
+.profile-contribution-table .profile-table-subtext { display: none; }
 .profile-row-summary { display: grid; gap: 5px; padding: 0; border: 0; color: inherit; background: transparent; text-align: left; }
 .profile-row-summary strong { color: var(--forest-dark); font-size: 12px; font-weight: 700; }
 .profile-row-summary small { color: var(--forest); font-size: 10px; font-weight: 750; }
