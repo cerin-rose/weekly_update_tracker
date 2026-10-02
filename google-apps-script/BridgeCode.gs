@@ -24,14 +24,13 @@ const CANONICAL_STUDENTS = {
 
 function doGet() {
   const finalRows = readSheet("Final Overall");
-  const meetingRows = readSheet("Meeting Database");
-  const formRows = readSheet("Form Responses 1");
-  const sourceRows = finalRows.length ? finalRows : meetingRows;
+  const sourceRows = finalRows.length ? finalRows : readSheet("Meeting Database");
   const updates = sourceRows.length
     ? sourceRows.filter(keepRow)
-    : formRows.filter(hasFormContent);
-  const students = readSheet("Students").length
-    ? readSheet("Students")
+    : readSheet("Form Responses 1").filter(hasFormContent);
+  const rosterRows = readSheet("Students");
+  const students = rosterRows.length
+    ? rosterRows
     : buildStudents(updates);
 
   return ContentService
