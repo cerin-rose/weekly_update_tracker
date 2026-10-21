@@ -1,397 +1,101 @@
-# SMART-MINDS Weekly Hub
+# SMART-MINDS Weekly Hub - current implementation
 
-## Project Overview
+## Purpose
 
-SMART-MINDS Weekly Hub is a frontend prototype for weekly contribution tracking and mentoring. It gives Dr. Lina a focused way to review student updates, identify questions or blockers, and respond. Students can submit weekly updates and review their contribution history.
+The Weekly Hub is a professor-facing workspace for Dr. Lina to review current meeting updates, browse the student directory, inspect student portfolios, view historical records, and convert pending meeting documents into organized Meeting Database rows. It uses real Google Sheets rows; it does not use Supabase, mock students, or fictional records at runtime.
 
-The current version uses source-authorized Fall 2026 SMART-MINDS records in Supabase. Browser localStorage remains only for unsynced mentor responses when Supabase is unavailable.
-
-## Visual Design
-
-### Colors
-
-- Page background: warm ivory `#f7f4ee`
-- Main surface: soft white `#fffdf8`
-- Primary forest green: `#214b3b`
-- Dark forest text: `#17372b`
-- Main text: `#292d2b`
-- Neutral supporting text: `#706d66`
-- Sage: `#708576`
-- Sage surface: `#e9efe8`
-- Dividers: `#e4dfd5`
-- Question accent: amber `#9a6828` / `#fff5df`
-- Blocked and support accent: coral `#ae6258` / `#fff0ec`
-
-### Branding and Layout
-
-- The SMART-MINDS wordmark uses a small forest-green sprout mark as the visual signature.
-- Navigation uses simple text links with a thin forest-green active underline.
-- The interface uses a system sans-serif typeface with a restrained editorial scale.
-- Page titles, names, decisions, and actions use dark forest green for clear hierarchy.
-- Supporting information uses warm neutral gray rather than repeated pale green surfaces.
-- Open layouts, whitespace, and subtle dividers provide most of the structure.
-- Small controls use approximately 6-8px radii. Larger grouped surfaces use approximately 12-14px radii.
-- The design avoids gradients, glassmorphism, decorative dashboards, excessive shadows, and unnecessary icons.
-
-## Header and Navigation
-
-The shared header includes:
-
-- SMART-MINDS wordmark and Weekly Hub label
-- Text-based primary navigation
-- Direct navigation for meeting review, student directory, and operations
-
-### Dr. Lina View
-
-- `Meeting review`
-- `Student directory`
-
-### Source Student View
-
-- `Submit update`
-- `My history`
-
-Student Directory is a global destination rather than a repeated tab inside Meeting Review. On mobile, the wordmark and demo selector remain in the first row and navigation moves to a second horizontally accessible row.
-
-## Meeting Review
-
-The Home route has one primary purpose: identify which student updates need attention, open an update, and respond.
-
-### Review Header
-
-- Page title: `Wednesday Review`
-- Subtle meeting metadata such as `Sep 16 · BMINDS`
-- Short description of the review task
-
-### Meeting Toolbar
-
-The toolbar keeps related controls in one compact line:
-
-- Previous and next meeting buttons
-- Meeting date selector
-- Team selector
-- Workstream selector
-- Optional date range control
-
-The demo opens on the BMINDS team for the Sep 16, 2026 meeting, showing the intended review context.
-
-### Search and Contextual Counts
-
-- Search is a compact utility control aligned to the right.
-- Counts appear as one contextual line rather than equal KPI cards.
-- The initial BMINDS view displays `2/2 submitted · 1 needs response · 0 missing`.
-
-### Review Tabs
-
-- `Needs response`
-- `All updates`
-- `Missing`
-
-Tabs are simple text controls with a thin active underline. They remain keyboard navigable and horizontally accessible on small screens.
-
-### Review Records
-
-Each record prioritizes the student and the meaningful update content:
-
-- Student initials and name
-- Role, team, and workstream as quiet metadata below the name
-- Completed work
-- Question or support request
-- Response state
-- Operational status
-- Meeting date
-- Short `View update` action
-
-Rows use subtle dividers instead of individual cards. The Missing view shows students who did not submit for the selected meeting and their most recent submission date when available.
-
-## Student Directory
-
-Student Directory is opened from the global navigation. Its purpose is to find a student, understand their role and current focus, and open their history.
-
-Each directory row shows:
-
-- Student name and initials
-- Role, program, and workstream in one metadata line
-- Current focus as the central content
-- Compact status
-- `View history` action
-
-The directory uses open rows and a small role filter rather than a grid of profile cards.
-
-## Update Detail and Mentor Response
-
-Selecting `View update` opens an inline detail section containing:
-
-- Completed work
-- Working on now
-- Next steps
-- Question for Dr. Lina
-- Support needed
-- Collaborators and resources
-- Submission date and time
-- Mentor response editor
-- Resolution status
-- Optional follow-up date
-
-The detail view uses editorial sections and amber or coral side accents for questions and support needs. Mentor responses are currently saved in browser localStorage.
-
-## Status Logic
-
-The shared `getDisplayStatus` function calculates the operational status in this order:
-
-1. `Blocked` when the stored status is blocked
-2. `Needs help` when Support needed contains text
-3. `Question` when Question for Dr. Lina contains text
-4. `On track` when no active question or support request exists
-
-Status is communicated through a labeled dot and text, not color alone. The same logic is used across Meeting Review, update history, student profiles, response calculations, and contextual counts.
-
-## Submit Update
-
-The Submit Update route has one primary purpose: help a student complete and submit the weekly record.
-
-Implemented elements:
-
-- Page title: `Submit weekly update`
-- Short instruction: `Share what moved forward before Wednesday’s meeting.`
-- Student submission workflow retained for a future separate student deployment
-- Meeting date selector
-- Workstream selector
-- Completed work field
-- Current work field
-- Next steps field
-- Status selector
-- Question for Dr. Lina field
-- Support needed field
-- Collapsed `Additional context` section for optional collaborators and resources
-- One primary `Submit update` action
-- Recent updates history
-
-The form uses clear labels, moderate input heights, visible focus states, and a single-column layout on mobile. Submitted updates are saved to Supabase and appear in the review workspace and the selected student’s history.
-
-## Student Profile and My History
-
-The profile route has one primary purpose: help a student understand their current focus and review prior contributions.
-
-Implemented elements:
-
-- Student initials and name
-- Role, program, and workstream in one metadata line
-- Current status
-- Current focus section
-- `Submit update` action
-- Weekly record list
-- Collapsed history filters revealed through `Filter history`
-- Expandable contribution records
-- Mentor responses when available
-
-Expanded records show completed work, current work, next steps, questions, support needs, collaborators, resources, and status. History rows use separators and whitespace instead of repeated cards.
-
-## Technical Implementation
-
-- Framework: Next.js App Router
-- Language: TypeScript and TSX
-- Styling: CSS in `src/app/globals.css`
-- Icons: Lucide React used only for meaningful controls and the brand mark
-- Data: real Fall 2026 source records imported from the SMART-MINDS agendas
-- Database: Supabase PostgreSQL when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are configured
-- Realtime: Supabase Realtime subscriptions for student updates, mentor responses, tasks, projects, events, outreach, surveys, manuscripts, fundraisers, and social content
-- Local fallback: browser localStorage when Supabase is not configured
-- Shared status logic: `src/lib/display-status.ts`
-- Update persistence: `src/lib/update-storage.ts`
-- Database migration: `supabase/migrations/20260916000000_initial_schema.sql`
-- Real source importer: local-only `supabase/import-real.mjs` (excluded from the public repository because it contains source-authorized real records)
-- Database types: `src/types/database.ts`
-- Database data layer: `src/lib/supabase.ts`
-- Hosting: Vercel
-
-## Version Roadmap
-
-### 1. Source-Connected Approval Version - Current State
-
-The current version is the Dr. Lina review deployment. It provides the interface, information hierarchy, core workflow, and source-connected Fall 2026 records. The student submission workflow remains available in source code for a future separate deployment but is redirected away from this deployment.
-
-Implemented:
-
-- Calm SMART-MINDS editorial visual system
-- Dr. Lina’s Meeting Review workspace
-- Meeting, team, workstream, search, and date range controls
-- Needs response, All updates, and Missing views
-- Global Student Directory destination
-- Twenty source-derived student records and real weekly agenda updates
-- Student profiles and contribution history
-- Source-student Submit Update flow
-- Mentor response and resolution workflow
-- Shared status calculation
-- Responsive desktop, tablet, and mobile layouts
-- `/operations` workspace with task board, projects, outreach CRM, survey milestones, and calendar views
-- Supabase-backed relational data layer with realtime refresh
-- Repeatable source importer for Fall 2026 students, roles, meetings, updates, tasks, projects, events, resources, surveys, outreach, manuscripts, fundraisers, and social content
-
-Current limitation:
-
-- No Supabase project credentials are committed to the repository; the migration must be run in the project’s SQL Editor or through the Supabase CLI.
-- The current UI shows an unavailable-data state if Supabase is not configured; it does not fall back to fictional records.
-- The importer excludes phone numbers and credential-bearing URL fragments.
-- The current RLS policies still allow anonymous access and must be replaced with authenticated, student/mentor-specific policies before production use.
-- Source records contain some first names without surnames, relative dates, and identity/source-file ambiguities; those are preserved or explicitly normalized rather than invented.
-
-### 2. MVP - Minimum Usable Pilot
-
-The MVP should support a small approved pilot with real users and limited real data.
-
-Add:
-
-- Approved program copy, teams, workstreams, meeting schedule, and deadlines
-- Student and mentor authentication
-- Server-side create, read, edit, and response operations
-- Shared database records for users, meetings, updates, responses, and statuses
-- Role-based permissions
-- Server-side validation and status calculation
-- Cross-device data access
-- Submission confirmation and basic error states
-- Basic notifications for submissions and mentor responses
-- Accessibility testing with approved content
-
-### Recommended MVP Architecture
+## Runtime data flow
 
 ```text
-Student or mentor browser
-          |
-          v
-Next.js application on Vercel
-          |
-          v
-Next.js Route Handlers under src/app/api/
-          |
-          v
-Supabase Auth and PostgreSQL
-          |
-          +--> Row Level Security for permissions
-          +--> Database backups
-          +--> Optional notification service
+Word / Google document upload -> Vercel extraction -> schema -> LLM -> normalization -> review
+                                                        ↓
+                                              Google Sheets API
+                                                        ↓
+                         Meeting Database -> Next.js API -> Next.js UI
+                         Students roster --/
 ```
 
-Vercel can continue hosting both the Next.js frontend and serverless Route Handlers. Supabase is recommended for the MVP because it provides managed PostgreSQL, authentication, Row Level Security, and backups without requiring a separate rented server to be maintained.
+Google Sheets remains the source of truth. Vercel reads `Meeting Database` and `Students` directly through the Google Sheets API. `Meeting Database` is the only live update source; `Final Overall` is retained as an archive outside the app's live read path. Approved document-import rows are appended to `Meeting Database`. Rows are deduplicated only when a stable `Source record ID` is present; similar text is not treated as proof that two updates are duplicates.
 
-Keep all Supabase credentials and other secrets in Vercel environment variables. Do not write credentials into the repository.
+Google Sheets remains the source of truth. The browser cache is only a short-lived last-known-good fallback and is never a write store.
 
-### 3. Real-World Production Version
+## Routes
 
-The production version should support reliable ongoing use and approved student information.
+- `/` - Meeting Review, defaulting to the newest meeting date.
+- `/students` - Canonical roster directory. Inactive roster rows remain visible and are marked inactive.
+- `/students/[studentId]` - Portfolio-style contribution history for one roster student.
+- `/records` - All historical and current records with filters.
+- `/import` - Import Meeting Document: review-first DOCX importer for approved historical meeting documents.
+- `/login` - Shared-password sign-in for protected app pages and data APIs.
 
-#### Server and Data Layer
+There is no `/operations` route. Operational guidance belongs in this document and in the Google Sheet, not in an unused application page.
 
-- Protected server/API layer using Next.js Route Handlers or a separate backend
-- Managed PostgreSQL with migrations, backups, and recovery procedures
-- Tables for users, roles, teams, meetings, updates, responses, follow-ups, and audit events
-- Server-side status derivation
-- Input validation, rate limiting, structured logs, and error handling
-- Draft saving, editing rules, deletion rules, and data-retention policies
+## Normalization rules
 
-#### Authentication and Permissions
+- Student identity comes only from the canonical roster returned by the API.
+- A name not in that roster becomes a meeting-level record and is retained in the note as an unmatched source name.
+- Blank or invalid statuses become `Needs review`; they never become `On track`.
+- Questions and support requests can raise the display status to `Question` or `Needs help`; an explicit `Blocked` status remains blocked.
+- Historical rows use `Week / meeting date` when `Timestamp` is blank.
+- `General` maps to `Other`; `Tasks for Next Week` maps to `Operations`.
+- Inactive roster students remain in the directory.
 
-- Secure sign-in for students, mentors, and administrators
-- Role-based access control
-- Student access limited to their own updates and history
-- Mentor access limited to approved teams and meetings
-- Administrator controls for users, teams, meetings, and content
-- Protected API routes and secure session handling
+## Security controls
 
-#### Workflow and Operations
+Production requires `DASHBOARD_ACCESS_PASSWORD`, `DASHBOARD_SESSION_SECRET`, `GOOGLE_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, and `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`. The middleware protects the dashboard, student pages, historical records, importer, and data APIs. Google credentials remain server-side and are never returned to the browser.
 
-- Notifications for submissions, mentor responses, reminders, and follow-up dates
-- Response history and audit trail
-- Missing-update reminders
-- Approved export or print views
-- Loading, empty, error, and success states
-- Uptime, server-error, and database monitoring
-- Automated backups and tested recovery
+The shared-password login is limited to 5 requests per client and 50 requests globally per 15-minute window. AI imports use the same Redis-compatible store and are limited to 20 conversions per day overall and 10 per client. Production fails closed if the shared rate-limit store is unavailable or not configured.
 
-#### Privacy and Security
+The importer:
 
-- Privacy review before adding real student information
-- No medical, research-participant, or confidential information without approved safeguards
-- Secure environment variables and database credentials
-- Documented retention, deletion, and access policies
-- Accessibility testing with keyboard and screen readers
+- accepts only `.docx` files with a ZIP/DOCX signature;
+- limits uploads to 10 MB;
+- limits extracted text to 120,000 characters;
+- limits generated rows to 500;
+- limits source links to 2,000 characters;
+- requires an Upstash Redis-compatible rate-limit store in Vercel production;
+- limits AI document conversions to 20 per day overall and 10 per day per client by default (`AI_IMPORT_DAILY_LIMIT` and `AI_IMPORT_USER_DAILY_LIMIT`);
+- keeps the OpenAI key server-side; and
+- requires review before writing to `Meeting Database`.
 
-### Coolify Alternative
+Security headers include `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and a restrictive `Permissions-Policy`.
 
-Coolify on a rented VPS is appropriate when self-hosting and infrastructure control are explicit requirements. It requires additional responsibility for firewall rules, operating system updates, SSL, monitoring, backups, migrations, and incident recovery.
+## Google Apps Script historical helper
 
-If Coolify is selected, keep the application and database separated:
+`google-apps-script/Code.gs` is the only Apps Script file retained. It is a generated helper for the one-time historical sheet seed workflow, not a second application database and not part of the Vercel runtime.
 
-```text
-Users
-  |
-  v
-Coolify VPS
-  |
-  +--> Next.js application and API
-  |
-  v
-Managed PostgreSQL provider
+If its source-derived data changes, regenerate it with:
+
+```bash
+node scripts/generate-google-apps-script.mjs
 ```
 
-Do not run the production application and database together on one inexpensive VPS unless a tested backup and recovery process is already in place. For this project, Vercel plus Supabase is the recommended first production path.
+Do not add the Apps Script bridge URL to the Vercel deployment. The live app uses the Google Sheets API directly.
 
-## Workflow Pipeline
+## Development checks
 
-```text
-Student prepares update
-        |
-        v
-Student submits weekly contribution
-        |
-        v
-Update is validated and saved
-        |
-        v
-Dr. Lina reviews the selected meeting
-        |
-        v
-Dr. Lina responds to questions or support needs
-        |
-        v
-Student views the response in My History
-        |
-        v
-Update is resolved or followed up
+```bash
+npm run lint
+npm test
+npm run build
 ```
 
-In the demo, validation and persistence happen in the browser. In the MVP and production versions, protected server routes and a shared database handle these steps.
+Tests cover status normalization, roster visibility, invalid-name handling, and timestamp fallback. Browser verification should cover `/`, `/login`, `/students`, `/students/[studentId]`, `/records`, and `/import` on desktop and a 320px-wide viewport.
 
-## Deployment Pipeline
+## Professor workflow
 
-```text
-Code changes
-     |
-     v
-GitHub repository
-     |
-     v
-Lint, tests, and production build
-     |
-     v
-Vercel deployment
-     |
-     v
-Production website
-     |
-     v
-Monitoring and maintenance
-```
+The professor signs in and uses five product areas:
 
-The current demo is built and deployed through Vercel. A production pipeline must also apply database migrations, configure environment variables, run automated tests, verify permissions, confirm backups, and monitor the deployed application.
+- `Meeting Review` - the current meeting view and primary working page.
+- `Student Directory` - the canonical roster, including inactive students.
+- `Student Portfolio` - opened by selecting a student from the directory.
+- `Historical Records` - the complete organized Meeting Database archive.
+- `Import Meeting Document` - the controlled document-import workflow.
 
-## Production Launch Checklist
+When a pending Word meeting document exists, the professor opens `Import Meeting Document`, selects the document date and source link, reviews the LLM-generated rows, and approves the rows to append to `Meeting Database`. The next refresh of `Meeting Review` reads those rows and displays them. The importer is the only application path for adding document-derived rows.
 
-- Approve all source-derived content and confirm any unresolved identity/date ambiguities.
-- Configure authentication, database, server routes, and Vercel environment variables.
-- Apply database migrations and seed only approved non-sensitive data.
-- Test student, mentor, and administrator permissions.
-- Test desktop, tablet, mobile, keyboard, screen reader, and browser-console behavior.
-- Verify validation, notifications, backups, recovery, and audit records.
-- Run `npm run lint` and `npm run build`.
-- Deploy through the existing Vercel project and monitor the first release.
+There is no student submission page, no Google Form response integration, and no `Form Responses 1` dependency in the application. Students may continue using any separate shared meeting document process outside this app; this app only organizes the professor's reviewed records.
+
+## Future enhancement process
+
+For a future change, keep this order: clarify the professor-facing outcome, identify the source-of-truth sheet, update the typed schema and normalization rules, update the smallest relevant route/component, add or update regression tests, run lint and build, then verify the full path from source document to Meeting Database to Meeting Review. Avoid adding new forms, APIs, or pages unless they are necessary for the professor's review workflow.

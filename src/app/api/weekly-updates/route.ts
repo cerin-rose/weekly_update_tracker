@@ -1,49 +1,25 @@
 import { NextResponse } from "next/server";
+import { readGoogleSheetState } from "@/lib/google-sheets-server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const maxDuration = 30;
 
-const cacheHeaders = {
-  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-};
-
-const defaultAppsScriptUrl = "https://script.google.com/macros/s/AKfycby72N0LTNQ8-f5sCguzf0BvbvW87ngwG5wdy8XaNhaZUl5AFKnn_-oVfwYhM5gpbT-t/exec";
-
-function sourceCandidates() {
-  return [...new Set([defaultAppsScriptUrl, process.env.GOOGLE_APPS_SCRIPT_URL].filter(Boolean))] as string[];
-}
+const cacheHeaders = { "Cache-Control": "private, no-store" };
 
 export async function GET() {
-  const failures: string[] = [];
-
-  for (const appsScriptUrl of sourceCandidates()) {
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
-      try {
-        const response = await fetch(appsScriptUrl, { cache: "no-store", signal: AbortSignal.timeout(7000), headers: { Accept: "application/json" } });
-        if (!response.ok) {
-          failures.push(`${response.status}`);
-          continue;
-        }
-
-        const payload = await response.json() as { rows?: Array<Record<string, unknown>>; updates?: Array<Record<string, unknown>>; students?: Array<Record<string, unknown>> };
-        const rows = (payload.updates?.length ? payload.updates : payload.rows ?? []).map((row, index) => ({ ...row, __rowNumber: String(index + 2) }));
-        const students = (payload.students ?? []).map((row, index) => ({ ...row, __rowNumber: String(index + 2) }));
-        if (!rows.length && !students.length) {
-          failures.push("empty source");
-          continue;
-        }
-        return NextResponse.json({ rows, students, source: "Google Sheets" }, { headers: cacheHeaders });
-      } catch (error) {
-        failures.push(error instanceof Error ? error.message : `request failed (attempt ${attempt})`);
-      }
+  try {
+    const payload = await readGoogleSheetState();
+    if (!payload.updates.length && !payload.students.length) {
+      return NextResponse.json({ rows: [], students: [], error: "The Google Sheets source returned no records." }, { status: 502, headers: cacheHeaders });
     }
+    return NextResponse.json({ rows: payload.updates, students: payload.students, source: "Meeting Database", lastUpdatedAt: new Date().toISOString() }, { headers: cacheHeaders });
+  } catch (error) {
+    console.error("Unable to load Google Sheet weekly updates", error);
+    return NextResponse.json({
+      rows: [],
+      students: [],
+      error: error instanceof Error ? error.message : "The Google Sheets source is temporarily unavailable. Please retry in a moment.",
+    }, { status: 502, headers: { "Cache-Control": "no-store" } });
   }
-
-  console.error("Unable to load Google Sheet weekly updates", failures);
-  return NextResponse.json({
-    rows: [],
-    students: [],
-    error: "The Google Sheets source is temporarily unavailable. Please retry in a moment.",
-  }, { status: 502, headers: { "Cache-Control": "no-store" } });
 }

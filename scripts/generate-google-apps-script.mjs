@@ -132,21 +132,8 @@ const legacyDoGet = [
   "}"
 ].join("\n");
 const liveResponseDoGet = [
-  "function formResponseRows() {",
-  "  const names = [\"Form Responses 1\", \"Form Responses\"];",
-  "  for (const name of names) {",
-  "    const rows = tableRows(name);",
-  "    if (rows.length) return rows;",
-  "  }",
-  "  return [];",
-  "}",
-  "",
   "function databaseRows() {",
-  "  const finalRows = tableRows(\"Final Overall\");",
-  "  if (finalRows.length) return finalRows;",
-  "  const meetingRows = tableRows(\"Meeting Database\");",
-  "  if (meetingRows.length) return meetingRows.concat(formResponseRows());",
-  "  return tableRows(\"Weekly Updates\").concat(formResponseRows());",
+  "  return tableRows(\"Meeting Database\");",
   "}",
   "",
   "function fallbackStudents(rows) {",
@@ -156,12 +143,14 @@ const liveResponseDoGet = [
   "  const output = {};",
   "  rows.forEach((row) => {",
   "    const name = row[\"Student name\"] || row[\"Student Name\"];",
-  "    if (!name || output[name.toLowerCase()]) return;",
-  "    const sourceStudent = sourceStudents[name.toLowerCase()];",
+  "    const canonicalStudent = DATA.students.find((student) => student.display_name.toLowerCase() === String(name || \"\").toLowerCase());",
+  "    const canonicalName = canonicalStudent ? canonicalStudent.display_name : \"\";",
+  "    if (!canonicalName || output[canonicalName.toLowerCase()]) return;",
+  "    const sourceStudent = sourceStudents[canonicalName.toLowerCase()];",
   "    const role = sourceStudent ? rolesByStudentId[sourceStudent.id] : null;",
-  "    output[name.toLowerCase()] = {",
-  "      \"Student ID\": sourceStudent ? sourceStudent.id : \"sheet-student-\" + name.toLowerCase().replace(/[^a-z0-9]+/g, \"-\"),",
-  "      \"Student Name\": name,",
+  "    output[canonicalName.toLowerCase()] = {",
+  "      \"Student ID\": sourceStudent ? sourceStudent.id : \"sheet-student-\" + canonicalName.toLowerCase().replace(/[^a-z0-9]+/g, \"-\"),",
+  "      \"Student Name\": canonicalName,",
   "      \"Team / program\": sourceStudent ? sourceStudent.team_program : (row[\"Team / program\"] || row.Program || \"SMART-MINDS\"),",
   "      Active: \"Yes\",",
   "      Role: role ? role.name : (row.Role || \"Student contributor\"),",
@@ -171,14 +160,33 @@ const liveResponseDoGet = [
   "  return Object.values(output);",
   "}",
   "",
-  "function doGet() {",
+  "function jsonResponse(payload) {",
+  "  return ContentService.createTextOutput(JSON.stringify(payload)).setMimeType(ContentService.MimeType.JSON);",
+  "}",
+  "",
+  "function doGet(e) {",
+  "  const expectedReadToken = PropertiesService.getScriptProperties().getProperty(\"READ_ACCESS_TOKEN\");",
+  "  const providedReadToken = e && e.parameter ? String(e.parameter.access_token || \"\") : \"\";",
+  "  if (!expectedReadToken || providedReadToken !== expectedReadToken) return jsonResponse({ ok: false, error: \"Unauthorized read request.\" });",
   "  const updates = databaseRows();",
   "  const sheetStudents = tableRows(\"Students\");",
   "  const students = sheetStudents.length ? sheetStudents : fallbackStudents(updates);",
   "  return ContentService.createTextOutput(JSON.stringify({ students: students, updates: updates, rows: updates, counts: COUNTS })).setMimeType(ContentService.MimeType.JSON);",
   "}"
 ].join("\n");
-const generatedWithLiveResponses = generated.replace(legacyDoGet, liveResponseDoGet);
+const generatedWithLiveResponses = generated
+  .replace(legacyDoGet, liveResponseDoGet)
+  .replace('  ["Weekly Updates", "student_updates"],\n', '')
+  .replace('function writeWeeklyUpdates(book)', 'function writeMeetingDatabase(book)')
+  .replace('const sheet = book.getSheetByName("Weekly Updates");', 'const sheet = book.getSheetByName("Meeting Database") || book.insertSheet("Meeting Database");')
+  .replace('writeWeeklyUpdates(book);', 'writeMeetingDatabase(book);')
+  .replace('Weekly Updates contains the normalized source records for all meetings.', 'Meeting Database contains the normalized source records for all meetings.')
+  .replace("Generated from supabase/seed.sql", "Generated from the project historical seed data")
+  .replace("Historical source data imported from supabase/seed.sql", "Historical source data imported from the project seed")
+  .replace("Deploy this Apps Script as a web app and set GOOGLE_APPS_SCRIPT_URL in Vercel.", "This helper is for one-time historical seeding; Vercel reads the sheet with the Google Sheets API.")
+  .replace("Students submit through the linked Google Form; the response tab remains separate.", "Professor reviews Meeting Database records and approved document imports.")
+  .replace("Form responses", "Current source")
+  .replace("Do not rename or delete the Google Form response tab.", "Meeting Database is the live update source; Final Overall is archive-only; Students supplies the roster.");
 
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 fs.writeFileSync(outputPath, generatedWithLiveResponses);

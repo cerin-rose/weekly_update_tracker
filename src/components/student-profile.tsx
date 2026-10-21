@@ -9,10 +9,10 @@ import type { Student, UpdateStatus, WeeklyUpdate, Workstream } from "@/types";
 import { StatusBadge } from "@/components/status-badge";
 
 const workstreamOptions: Array<"All workstreams" | Workstream> = ["All workstreams", "Research", "Education", "Outreach", "Communications", "Fundraising", "Manuscript", "Social Media", "Operations", "Website", "Other"];
-const statusOptions: Array<"All statuses" | UpdateStatus> = ["All statuses", "on-track", "question", "needs-help", "blocked"];
+const statusOptions: Array<"All statuses" | UpdateStatus> = ["All statuses", "on-track", "question", "needs-help", "blocked", "needs-review"];
 
 function statusLabel(status: UpdateStatus) {
-  return { "on-track": "On track", question: "Question", "needs-help": "Needs help", blocked: "Blocked" }[status];
+  return { "on-track": "On track", question: "Question", "needs-help": "Needs help", blocked: "Blocked", "needs-review": "Needs review" }[status];
 }
 
 function formatDate(date: string) {

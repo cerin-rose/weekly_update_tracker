@@ -5,6 +5,7 @@ const statusDetails: Record<UpdateStatus, { label: string; className: string }> 
   question: { label: "Question", className: "status-question" },
   "needs-help": { label: "Needs help", className: "status-needs-help" },
   blocked: { label: "Blocked", className: "status-blocked" },
+  "needs-review": { label: "Needs review", className: "status-needs-review" },
 };
 
 export function StatusBadge({ status }: { status: UpdateStatus }) {

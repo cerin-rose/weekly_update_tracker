@@ -15,14 +15,14 @@ type StatusFilter = "All statuses" | UpdateStatus;
 
 const teams: TeamFilter[] = ["All teams", "B-SMART", "BMINDS", "SMART-MINDS"];
 const workstreams: WorkstreamFilter[] = ["All workstreams", "Research", "Education", "Outreach", "Communications", "Fundraising", "Manuscript", "Social Media", "Operations", "Website", "Other"];
-const statuses: StatusFilter[] = ["All statuses", "on-track", "question", "needs-help", "blocked"];
+const statuses: StatusFilter[] = ["All statuses", "on-track", "question", "needs-help", "blocked", "needs-review"];
 
 function formatDate(date: string) {
   return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function statusLabel(status: StatusFilter) {
-  return status === "All statuses" ? status : { "on-track": "On track", question: "Question", "needs-help": "Needs help", blocked: "Blocked" }[status];
+  return status === "All statuses" ? status : { "on-track": "On track", question: "Question", "needs-help": "Needs help", blocked: "Blocked", "needs-review": "Needs review" }[status];
 }
 
 function RecordEntry({ update, student, onStudent }: { update: WeeklyUpdate; student?: Student; onStudent: (studentId: string) => void }) {

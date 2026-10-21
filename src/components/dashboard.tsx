@@ -15,7 +15,7 @@ type StatusFilter = "All statuses" | UpdateStatus;
 
 const workstreamOptions: WorkstreamFilter[] = ["All workstreams", "Research", "Education", "Outreach", "Communications", "Fundraising", "Manuscript", "Social Media", "Operations", "Website", "Other"];
 const teamOptions: TeamFilter[] = ["All teams", "B-SMART", "BMINDS", "SMART-MINDS"];
-const statusOptions: StatusFilter[] = ["All statuses", "on-track", "question", "needs-help", "blocked"];
+const statusOptions: StatusFilter[] = ["All statuses", "on-track", "question", "needs-help", "blocked", "needs-review"];
 const workstreamOrder: Record<string, number> = { Outreach: 1, Education: 2, "Social Media": 3, Research: 4, Manuscript: 5, Fundraising: 6, Other: 7, Operations: 8, Communications: 9, Website: 10 };
 
 function formatDate(date: string) {
@@ -24,7 +24,7 @@ function formatDate(date: string) {
 }
 
 function statusLabel(status: StatusFilter | UpdateStatus) {
-  return status === "All statuses" ? status : { "on-track": "On track", question: "Question", "needs-help": "Needs help", blocked: "Blocked" }[status];
+  return status === "All statuses" ? status : { "on-track": "On track", question: "Question", "needs-help": "Needs help", blocked: "Blocked", "needs-review": "Needs review" }[status];
 }
 
 function sourceLink(update: WeeklyUpdate) {
@@ -53,14 +53,14 @@ function MeetingUpdateRow({ update, student, onStudent }: { update: WeeklyUpdate
   const link = sourceLink(update);
   const relatedLinks = update.resourceLinks.filter((item) => !item.includes(link) && item.trim());
   return <tr className={!student ? "review-row-meeting" : undefined}>
-    <td className="review-cell-workstream">{update.workstream}</td>
-    <td className="review-cell-owner">{student ? <span className="review-owner"><span className="owner-mark">{student.initials}</span><span><strong><button className="student-name-link" type="button" onClick={() => onStudent(student.id)}>{student.name}</button></strong><small>{student.programAffiliation}</small></span></span> : <span className="meeting-level-label">Meeting-level</span>}</td>
-    <td><strong className="meeting-task">{taskText(update)}</strong></td>
-    <td><StatusBadge status={getDisplayStatus(update)} /></td>
-    <td>{update.event || "-"}</td>
-    <td>{noteText(update, feedback.notes)}</td>
-    <td className="review-cell-feedback">{feedback.feedback || "-"}</td>
-    <td>{link ? <a className="table-source" href={link} target="_blank" rel="noreferrer">Open source ↗</a> : "-"}{relatedLinks.length > 0 && <small className="table-subtext">{relatedLinks.join(" · ")}</small>}</td>
+    <td data-label="Category" className="review-cell-workstream">{update.workstream}</td>
+    <td data-label="Person" className="review-cell-owner">{student ? <span className="review-owner"><span className="owner-mark">{student.initials}</span><span><strong><button className="student-name-link" type="button" onClick={() => onStudent(student.id)}>{student.name}</button></strong><small>{student.programAffiliation}</small></span></span> : <span className="meeting-level-label">Meeting-level</span>}</td>
+    <td data-label="Task / work"><strong className="meeting-task">{taskText(update)}</strong></td>
+    <td data-label="Status"><StatusBadge status={getDisplayStatus(update)} /></td>
+    <td data-label="Deadline / meeting">{update.event || "-"}</td>
+    <td data-label="Notes">{noteText(update, feedback.notes)}</td>
+    <td data-label="Dr. Begdache feedback" className="review-cell-feedback">{feedback.feedback || "-"}</td>
+    <td data-label="Source">{link ? <a className="table-source" href={link} target="_blank" rel="noreferrer">Open source ↗</a> : "-"}{relatedLinks.length > 0 && <small className="table-subtext">{relatedLinks.join(" · ")}</small>}</td>
   </tr>;
 }
 
@@ -78,6 +78,7 @@ export function Dashboard() {
   const [showDirectory, setShowDirectory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState("");
   const hasInitializedMeetingDate = useRef(false);
 
   const refreshData = useCallback(async () => {
@@ -87,6 +88,7 @@ export function Dashboard() {
       const remote = await loadGoogleSheetState();
       setStudents(remote.students);
       setUpdates(remote.updates);
+      setLastUpdatedAt(remote.lastUpdatedAt || "");
       const dates = [...new Set(remote.updates.map((update) => update.meetingDate).filter(Boolean))].sort((a, b) => b.localeCompare(a));
       setAvailableMeetingDates(dates);
       setMeetingDate((current) => {
@@ -144,7 +146,7 @@ export function Dashboard() {
       {loading ? <div className="directory-table-wrap"><p className="loading-state">Loading students...</p></div> : directoryStudents.length ? <StudentRosterTable students={directoryStudents} onStudent={(studentId) => router.push(`/students/${studentId}`)} /> : <p className="empty-state">No students match these filters.</p>}
     </section> : <>
       <section className="filter-panel" aria-label="Meeting View filters"><div className="meeting-picker"><button className="icon-button" aria-label="Previous meeting" disabled={!availableMeetingDates.length || availableMeetingDates.indexOf(meetingDate) === availableMeetingDates.length - 1} onClick={() => moveMeeting(1)}><ArrowLeft size={16} /></button><label><span>Meeting</span><select value={meetingDate} onChange={(event) => setMeetingDate(event.target.value)}>{availableMeetingDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}<option value="all">All meetings</option></select></label><button className="icon-button" aria-label="Next meeting" disabled={!availableMeetingDates.length || meetingDate === availableMeetingDates[0]} onClick={() => moveMeeting(-1)}><ArrowRight size={16} /></button></div><label><span>Team</span><select value={team} onChange={(event) => setTeam(event.target.value as TeamFilter)}>{teamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Workstream</span><select value={workstream} onChange={(event) => setWorkstream(event.target.value as WorkstreamFilter)}>{workstreamOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)}>{statusOptions.map((option) => <option key={option} value={option}>{statusLabel(option)}</option>)}</select></label><label className="filter-search"><span>Search</span><span className="input-with-icon"><Search size={16} /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search student, task, or question" /></span></label></section>
-      <div className="review-context"><span>{loading ? "Loading…" : `${filteredUpdates.length} updates`}</span></div>
+      <div className="review-context"><span>{loading ? "Loading…" : `${filteredUpdates.length} updates`}</span>{lastUpdatedAt && <span>Loaded {new Date(lastUpdatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}</div>
       <section className="review-list" aria-label="Meeting updates">{loading ? <div className="loading-state">Loading meeting updates…</div> : filteredUpdates.length ? <div className="review-table-wrap"><table className="review-table meeting-view-table"><caption className="sr-only">One row per update for the selected meeting</caption><thead><tr><th scope="col">Category</th><th scope="col">Person</th><th scope="col">Task / What they are working on</th><th scope="col">Status</th><th scope="col">Deadline / Meeting</th><th scope="col">Notes</th><th scope="col">Dr. Begdache feedback</th><th scope="col">Source</th></tr></thead><tbody>{filteredUpdates.map((update) => <MeetingUpdateRow key={update.id} update={update} student={studentFor(update)} onStudent={(studentId) => router.push(`/students/${studentId}`)} />)}</tbody></table></div> : <div className="empty-state">No updates match these filters.</div>}</section>
     </>}
   </main>;

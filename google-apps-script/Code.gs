@@ -1,4 +1,4 @@
-// Generated from supabase/seed.sql. Run "importHistoricalData" once in Apps Script.
+// Generated from the project historical seed data. Run "importHistoricalData" once in Apps Script.
 // Do not edit DATA manually; rerun scripts/generate-google-apps-script.mjs when the source changes.
 
 const SPREADSHEET_ID = "1NZM8v_hWtAh54GDy2A1r4kGog3LJyYynwEJvGdMt3E0";
@@ -3484,7 +3484,6 @@ const TABLES = [
   ["Meetings", "meetings"],
   ["Projects", "projects"],
   ["Project Members", "project_members"],
-  ["Weekly Updates", "student_updates"],
   ["Tasks", "tasks"],
   ["Events", "events"],
   ["Event Participants", "event_participants"],
@@ -3528,7 +3527,7 @@ function importHistoricalData() {
   });
 
   writeStudentsRoster(book);
-  writeWeeklyUpdates(book);
+  writeMeetingDatabase(book);
   writeInstructions(book);
   SpreadsheetApp.getUi().alert("Imported " + TABLES.length + " database tabs from the source seed.");
 }
@@ -3549,8 +3548,8 @@ function writeStudentsRoster(book) {
   sheet.autoResizeColumns(1, headers.length);
 }
 
-function writeWeeklyUpdates(book) {
-  const sheet = book.getSheetByName("Weekly Updates");
+function writeMeetingDatabase(book) {
+  const sheet = book.getSheetByName("Meeting Database") || book.insertSheet("Meeting Database");
   const students = Object.fromEntries(DATA.students.map((student) => [student.id, student.display_name]));
   const meetings = Object.fromEntries(DATA.meetings.map((meeting) => [meeting.id, meeting.meeting_date]));
   const headers = ["Update ID", "Timestamp", "Student name", "Week / meeting date", "Workstream", "What did you complete this week?", "What are you currently working on?", "What are your next steps?", "What question do you have for Dr. Lina?", "What support do you need?", "Who did you collaborate with?", "Add any relevant links or file names", "Current status", "Project ID", "Source record ID"];
@@ -3570,13 +3569,13 @@ function writeInstructions(book) {
   const sheet = book.getSheetByName("README") || book.insertSheet("README", 0);
   sheet.clear();
   sheet.getRange(1, 1, 8, 2).setValues([
-    ["SMART-MINDS database", "Historical source data imported from supabase/seed.sql"],
-    ["Workflow", "Students submit through the linked Google Form; the response tab remains separate."],
-    ["App bridge", "Deploy this Apps Script as a web app and set GOOGLE_APPS_SCRIPT_URL in Vercel."],
-    ["Historical updates", "Weekly Updates contains the normalized source records for all meetings."],
+    ["SMART-MINDS database", "Historical source data imported from the project seed"],
+    ["Workflow", "Professor reviews Meeting Database records and approved document imports."],
+    ["App bridge", "This helper is for one-time historical seeding; Vercel reads the sheet with the Google Sheets API."],
+    ["Historical updates", "Meeting Database contains the normalized source records for all meetings."],
     ["Source meetings", "2026-08-19, 2026-08-26, 2026-09-02, 2026-09-09"],
     ["Source counts", JSON.stringify(COUNTS)],
-    ["Form responses", "Do not rename or delete the Google Form response tab."],
+    ["Current source", "Meeting Database is the live update source; Final Overall is archive-only; Students supplies the roster."],
     ["Last import", new Date().toISOString()]
   ]);
   sheet.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#dfe9de");
@@ -3595,21 +3594,8 @@ function tableRows(sheetName) {
   return values.filter((row) => row.some(Boolean)).map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] || ""])));
 }
 
-function formResponseRows() {
-  const names = ["Form Responses 1", "Form Responses"];
-  for (const name of names) {
-    const rows = tableRows(name);
-    if (rows.length) return rows;
-  }
-  return [];
-}
-
 function databaseRows() {
-  const finalRows = tableRows("Final Overall");
-  if (finalRows.length) return finalRows;
-  const meetingRows = tableRows("Meeting Database");
-  if (meetingRows.length) return meetingRows.concat(formResponseRows());
-  return tableRows("Weekly Updates").concat(formResponseRows());
+  return tableRows("Meeting Database");
 }
 
 function fallbackStudents(rows) {
@@ -3619,12 +3605,14 @@ function fallbackStudents(rows) {
   const output = {};
   rows.forEach((row) => {
     const name = row["Student name"] || row["Student Name"];
-    if (!name || output[name.toLowerCase()]) return;
-    const sourceStudent = sourceStudents[name.toLowerCase()];
+    const canonicalStudent = DATA.students.find((student) => student.display_name.toLowerCase() === String(name || "").toLowerCase());
+    const canonicalName = canonicalStudent ? canonicalStudent.display_name : "";
+    if (!canonicalName || output[canonicalName.toLowerCase()]) return;
+    const sourceStudent = sourceStudents[canonicalName.toLowerCase()];
     const role = sourceStudent ? rolesByStudentId[sourceStudent.id] : null;
-    output[name.toLowerCase()] = {
-      "Student ID": sourceStudent ? sourceStudent.id : "sheet-student-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      "Student Name": name,
+    output[canonicalName.toLowerCase()] = {
+      "Student ID": sourceStudent ? sourceStudent.id : "sheet-student-" + canonicalName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      "Student Name": canonicalName,
       "Team / program": sourceStudent ? sourceStudent.team_program : (row["Team / program"] || row.Program || "SMART-MINDS"),
       Active: "Yes",
       Role: role ? role.name : (row.Role || "Student contributor"),
@@ -3634,7 +3622,14 @@ function fallbackStudents(rows) {
   return Object.values(output);
 }
 
-function doGet() {
+function jsonResponse(payload) {
+  return ContentService.createTextOutput(JSON.stringify(payload)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  const expectedReadToken = PropertiesService.getScriptProperties().getProperty("READ_ACCESS_TOKEN");
+  const providedReadToken = e && e.parameter ? String(e.parameter.access_token || "") : "";
+  if (!expectedReadToken || providedReadToken !== expectedReadToken) return jsonResponse({ ok: false, error: "Unauthorized read request." });
   const updates = databaseRows();
   const sheetStudents = tableRows("Students");
   const students = sheetStudents.length ? sheetStudents : fallbackStudents(updates);

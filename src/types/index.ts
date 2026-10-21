@@ -12,7 +12,7 @@ export type Workstream =
   | "Website"
   | "Other";
 
-export type UpdateStatus = "on-track" | "question" | "needs-help" | "blocked";
+export type UpdateStatus = "on-track" | "question" | "needs-help" | "blocked" | "needs-review";
 export type RecordType = "student" | "meeting" | "unassigned";
 
 export interface Student {

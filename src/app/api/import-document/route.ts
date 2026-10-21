@@ -2,14 +2,28 @@ import { randomUUID } from "node:crypto";
 import JSZip from "jszip";
 import mammoth from "mammoth";
 import { NextResponse } from "next/server";
+import {
+  CANONICAL_STUDENTS,
+  STATUS_VALUES,
+  WORKSTREAMS,
+  appendNormalizationNote,
+  canonicalStudentName,
+  normalizeProgram,
+  normalizeStatus,
+  normalizeWorkstream,
+  validMeetingDate,
+} from "@/lib/meeting-normalization";
+import { buildSourceBlocks, coverageReport, type SourceBlock } from "@/lib/document-coverage";
+import { appendMeetingRows } from "@/lib/google-sheets-server";
+import { consumeAiImportQuota } from "@/lib/ai-rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const bridgeUrl = "https://script.google.com/macros/s/AKfycby72N0LTNQ8-f5sCguzf0BvbvW87ngwG5wdy8XaNhaZUl5AFKnn_-oVfwYhM5gpbT-t/exec";
-const canonicalStudents = ["Georgi", "Sarah", "Marissa", "Emma", "Gianna", "Zach", "Carolyn", "Ysabel", "Megan", "Serena", "Christos", "Christian", "Alyssa", "Katarina", "Isabella", "Max", "Amalia", "Joaquim", "Izzy", "Cerin"];
-const allowedStatuses = ["On track", "Question", "Needs help", "Blocked"];
-const allowedWorkstreams = ["Research", "Education", "Outreach", "Communications", "Fundraising", "Manuscript", "Social Media", "Operations", "Website", "Other"];
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_DOCUMENT_CHARACTERS = 120_000;
+const MAX_IMPORT_ROWS = 500;
+const MAX_SOURCE_LINK_LENGTH = 2_000;
 
 type ImportRow = {
   "Student name": string;
@@ -35,10 +49,16 @@ type ImportRow = {
   "Source document": string;
   "Source section": string;
   "Dr. Begdache feedback": string;
+  "Source block IDs": string[];
 };
 
 function responseError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
+}
+
+function isSameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  return Boolean(origin) && origin === new URL(request.url).origin;
 }
 
 function text(value: unknown) {
@@ -61,14 +81,16 @@ function decodeXml(value: string) {
 }
 
 async function extractDocument(buffer: Buffer) {
+  if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b) throw new Error("The uploaded file is not a valid DOCX archive.");
   const rawText = (await mammoth.extractRawText({ buffer })).value.trim();
   let formattedText = rawText;
+  let paragraphs = rawText.split(/\n+/).map((paragraph) => paragraph.trim()).filter(Boolean);
 
   try {
     const zip = await JSZip.loadAsync(buffer);
     const documentXml = await zip.file("word/document.xml")?.async("string");
     if (documentXml) {
-      const paragraphs = [...documentXml.matchAll(/<w:p\b[\s\S]*?<\/w:p>/g)].map((match) => {
+      const formattedParagraphs = [...documentXml.matchAll(/<w:p\b[\s\S]*?<\/w:p>/g)].map((match) => {
         const paragraph = match[0];
         const runs = [...paragraph.matchAll(/<w:r\b[\s\S]*?<\/w:r>/g)].map((runMatch) => {
           const run = runMatch[0];
@@ -79,37 +101,50 @@ async function extractDocument(buffer: Buffer) {
         }).join("");
         return runs.trim();
       }).filter(Boolean);
-      if (paragraphs.length) formattedText = paragraphs.join("\n\n");
+      if (formattedParagraphs.length) {
+        paragraphs = formattedParagraphs;
+        formattedText = formattedParagraphs.join("\n\n");
+      }
     }
   } catch (error) {
     console.warn("Could not inspect DOCX formatting; continuing with extracted text", error);
   }
 
   if (!formattedText) throw new Error("The Word document did not contain readable text.");
-  return { rawText, formattedText };
+  if (formattedText.length > MAX_DOCUMENT_CHARACTERS) throw new Error("The Word document is too large to review safely. Split it into smaller meeting documents.");
+  return { rawText, formattedText, paragraphs };
 }
 
 function normalizeRows(value: unknown, meetingDate: string, sourceLink: string, fileName: string): ImportRow[] {
   if (!Array.isArray(value)) return [];
+  if (value.length > MAX_IMPORT_ROWS) throw new Error(`The document produced more than ${MAX_IMPORT_ROWS} rows. Review the source document and split it before importing.`);
 
   return value.map((candidate) => {
     const row = (candidate && typeof candidate === "object" ? candidate : {}) as Record<string, unknown>;
     const studentName = text(row["Student name"] || row.studentName);
-    const workstream = text(row.Workstream || row.category);
+    const workstream = normalizeWorkstream(row.Workstream || row.category);
     const task = text(row.Task || row.task || row["Task / What they are working on"]);
     const notes = text(row["Meeting notes"] || row.notes);
     const feedback = text(row["Dr. Begdache feedback"] || row.feedback);
     const sourceRecordId = text(row["Source record ID"]) || `IMP-${meetingDate.replaceAll("-", "")}-${randomUUID().slice(0, 8)}`;
     const sourceSection = text(row["Source section"] || row.section);
-    const meetingNotes = [notes, feedback ? `Dr. Begdache feedback: ${feedback}` : ""].filter(Boolean).join(" ");
+    const sourceBlockIds = Array.isArray(row["Source block IDs"])
+      ? row["Source block IDs"].map(text).filter(Boolean)
+      : text(row["Source block IDs"] || row.sourceBlockIds).split(/[\s,]+/).filter(Boolean);
+    const status = normalizeStatus(row["Current status"] || row.status);
+    const meetingNotes = appendNormalizationNote(
+      [notes, feedback ? `Dr. Begdache feedback: ${feedback}` : ""].filter(Boolean).join(" "),
+      "Original status",
+      status.original,
+    );
 
     return {
-      "Student name": canonicalStudents.find((name) => name.toLowerCase() === studentName.toLowerCase()) || "",
-      "Team / program": text(row["Team / program"] || row.program) || "SMART-MINDS",
+      "Student name": canonicalStudentName(studentName),
+      "Team / program": normalizeProgram(row["Team / program"] || row.program),
       Role: text(row.Role) || "Student contributor",
       "Meeting title": text(row["Meeting title"]) || fileName.replace(/\.[^.]+$/, ""),
       "Week / meeting date": meetingDate,
-      Workstream: allowedWorkstreams.includes(workstream) ? workstream : "Other",
+      Workstream: workstream.value,
       "What did you complete this week?": text(row["What did you complete this week?"] || row.completed),
       "What are you currently working on?": text(row["What are you currently working on?"] || row.workingOn),
       "What are your next steps?": text(row["What are your next steps?"] || row.nextSteps) || task,
@@ -117,7 +152,7 @@ function normalizeRows(value: unknown, meetingDate: string, sourceLink: string, 
       "What support do you need?": text(row["What support do you need?"] || row.support),
       "Who did you collaborate with?": text(row["Who did you collaborate with?"] || row.collaborators),
       "Add any relevant links or file names": text(row["Add any relevant links or file names"] || row.links) || sourceLink,
-      "Current status": allowedStatuses.includes(text(row["Current status"] || row.status)) ? text(row["Current status"] || row.status) : "On track",
+      "Current status": status.value && status.value !== "needs-review" ? ({ "on-track": "On track", question: "Question", "needs-help": "Needs help", blocked: "Blocked" } as Record<string, string>)[status.value] || "" : "",
       Project: text(row.Project),
       Task: task,
       "Task status": text(row["Task status"] || row.taskStatus),
@@ -127,8 +162,9 @@ function normalizeRows(value: unknown, meetingDate: string, sourceLink: string, 
       "Source document": sourceLink,
       "Source section": sourceSection || "Not specified",
       "Dr. Begdache feedback": feedback,
+      "Source block IDs": sourceBlockIds,
     };
-  }).filter((row) => row.Task || row["Meeting notes"] || row["What are you currently working on?"] || row["What did you complete this week?"] || row["What are your next steps?"] || row["Student name"]);
+  }).filter((row) => row.Task || row["Meeting notes"] || row["What are you currently working on?"] || row["What did you complete this week?"] || row["What are your next steps?"] || row["What question do you have for Dr. Lina?"] || row["What support do you need?"] || row["Who did you collaborate with?"] || row["Add any relevant links or file names"] || row.Event || row["Dr. Begdache feedback"] || row["Student name"] || row["Source block IDs"].length);
 }
 
 function systemPrompt() {
@@ -137,20 +173,24 @@ function systemPrompt() {
 Return only JSON matching the supplied schema. Make one row for each meaningful person-specific task, current work item, completed item, follow-up, meeting, deadline, question, resource, or meeting-level action. Do not combine unrelated tasks.
 
 Rules:
+- Every supplied Source block ID must appear in at least one output row's Source block IDs array. If a block is context-only, create a meeting-level row with its text in Meeting notes rather than omitting it.
+- Do not invent Source block IDs. If multiple blocks belong to one task, include every applicable ID in that row.
 - Use the selected meeting date for every row.
-- Use only these canonical student names: ${canonicalStudents.join(", ")}. If a person is not clearly identified, leave Student name blank and make it meeting-level.
+- Use only these canonical student names: ${CANONICAL_STUDENTS.join(", ")}. If a person is not clearly identified, leave Student name blank and make it meeting-level.
 - Never infer a student from a name appearing inside another person's activity text.
 - Use the section heading or explicit nearby ownership. A row can be meeting-level when it applies to Everyone or the whole team.
-- Use Workstream values only from: ${allowedWorkstreams.join(", ")}. Use Other when it cannot be determined.
-- Use Current status values only from: ${allowedStatuses.join(", ")}. Do not invent completion.
+- Use Workstream values only from: ${WORKSTREAMS.join(", ")}. Use Other when it cannot be determined.
+- Use Current status values only from: ${STATUS_VALUES.join(", ")}. Do not invent completion.
 - Text marked [RED TEXT: ...] comes from red Word text. In these documents red Dr. Begdache text is feedback. Put it in Dr. Begdache feedback, and include any new action in Task when the feedback assigns one.
 - Keep the source section, task details, deadlines/meetings, notes, collaborators, questions, support needs, and resource links. Use — when a field is genuinely absent.
 - Prefer concise, faithful wording; do not summarize away names, deadlines, URLs, or important context.`;
 }
 
-async function generateRows(textForModel: string, meetingDate: string, sourceLink: string, fileName: string) {
+async function generateRowsForBlocks(blocks: SourceBlock[], meetingDate: string, sourceLink: string, fileName: string) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured on the server yet.");
+
+  const sourceText = blocks.map((block) => `[${block.id}] Section: ${block.section}; Owner context: ${block.owner || "Meeting-level"}\n${block.text}`).join("\n\n");
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -174,9 +214,9 @@ async function generateRows(textForModel: string, meetingDate: string, sourceLin
                   additionalProperties: false,
                   properties: {
                     "Student name": { type: "string" }, "Team / program": { type: "string" }, Role: { type: "string" }, "Meeting title": { type: "string" }, Workstream: { type: "string" },
-                    "What did you complete this week?": { type: "string" }, "What are you currently working on?": { type: "string" }, "What are your next steps?": { type: "string" }, "What question do you have for Dr. Lina?": { type: "string" }, "What support do you need?": { type: "string" }, "Who did you collaborate with?": { type: "string" }, "Add any relevant links or file names": { type: "string" }, "Current status": { type: "string" }, Project: { type: "string" }, Task: { type: "string" }, "Task status": { type: "string" }, Event: { type: "string" }, "Meeting notes": { type: "string" }, "Source section": { type: "string" }, "Dr. Begdache feedback": { type: "string" }
+                    "What did you complete this week?": { type: "string" }, "What are you currently working on?": { type: "string" }, "What are your next steps?": { type: "string" }, "What question do you have for Dr. Lina?": { type: "string" }, "What support do you need?": { type: "string" }, "Who did you collaborate with?": { type: "string" }, "Add any relevant links or file names": { type: "string" }, "Current status": { type: "string" }, Project: { type: "string" }, Task: { type: "string" }, "Task status": { type: "string" }, Event: { type: "string" }, "Meeting notes": { type: "string" }, "Source section": { type: "string" }, "Dr. Begdache feedback": { type: "string" }, "Source block IDs": { type: "array", items: { type: "string" } }
                   },
-                  required: ["Student name", "Team / program", "Role", "Meeting title", "Workstream", "What did you complete this week?", "What are you currently working on?", "What are your next steps?", "What question do you have for Dr. Lina?", "What support do you need?", "Who did you collaborate with?", "Add any relevant links or file names", "Current status", "Project", "Task", "Task status", "Event", "Meeting notes", "Source section", "Dr. Begdache feedback"]
+                  required: ["Student name", "Team / program", "Role", "Meeting title", "Workstream", "What did you complete this week?", "What are you currently working on?", "What are your next steps?", "What question do you have for Dr. Lina?", "What support do you need?", "Who did you collaborate with?", "Add any relevant links or file names", "Current status", "Project", "Task", "Task status", "Event", "Meeting notes", "Source section", "Dr. Begdache feedback", "Source block IDs"]
                 }
               }
             },
@@ -186,7 +226,7 @@ async function generateRows(textForModel: string, meetingDate: string, sourceLin
       },
       messages: [
         { role: "system", content: systemPrompt() },
-        { role: "user", content: `Selected meeting date: ${meetingDate}\nSource document link: ${sourceLink}\nFile name: ${fileName}\n\nDocument text:\n${textForModel}` }
+        { role: "user", content: `Selected meeting date: ${meetingDate}\nSource document link: ${sourceLink}\nFile name: ${fileName}\n\nSource blocks to convert:\n${sourceText}` }
       ]
     })
   });
@@ -201,32 +241,37 @@ async function generateRows(textForModel: string, meetingDate: string, sourceLin
   return normalizeRows((parsed as { rows?: unknown }).rows, meetingDate, sourceLink, fileName);
 }
 
+async function generateRows(blocks: SourceBlock[], meetingDate: string, sourceLink: string, fileName: string) {
+  const sections = [...new Set(blocks.map((block) => block.section))];
+  const sectionRows = await Promise.all(sections.map((section) => generateRowsForBlocks(
+    blocks.filter((block) => block.section === section),
+    meetingDate,
+    sourceLink,
+    fileName,
+  )));
+  return sectionRows.flat();
+}
+
 async function saveRows(rows: ImportRow[]) {
-  const writeToken = process.env.GOOGLE_APPS_SCRIPT_WRITE_TOKEN;
-  if (!writeToken) throw new Error("GOOGLE_APPS_SCRIPT_WRITE_TOKEN is not configured on the server yet.");
-  const requestBody = JSON.stringify({ action: "appendMeetingRows", token: writeToken, rows });
-  const requestOptions: RequestInit = {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: requestBody,
-    redirect: "manual",
-  };
-  let response = await fetch(process.env.GOOGLE_APPS_SCRIPT_URL || bridgeUrl, requestOptions);
-  const redirectLocation = response.headers.get("location");
-  if (response.status >= 300 && response.status < 400 && redirectLocation) {
-    response = await fetch(redirectLocation, requestOptions);
-  }
-  const payload = await response.json().catch(() => ({})) as { error?: string; ok?: boolean; count?: number };
-  if (!response.ok || !payload.ok) throw new Error(payload.error || `The Google Sheets bridge returned ${response.status}.`);
-  return payload;
+  return appendMeetingRows(rows);
 }
 
 export async function POST(request: Request) {
   try {
+    if (!isSameOrigin(request)) return responseError("This write request must come from the SMART-MINDS app.", 403);
     if (request.headers.get("content-type")?.includes("application/json")) {
-      const body = await request.json() as { action?: string; rows?: ImportRow[] };
+      const body = await request.json() as { action?: string; rows?: unknown[]; coverage?: { complete?: boolean } };
       if (body.action !== "save" || !Array.isArray(body.rows) || !body.rows.length) return responseError("Choose at least one reviewed row to save.");
-      const result = await saveRows(body.rows);
+      if (!body.coverage?.complete) return responseError("The import is incomplete. Review the unmatched source blocks before saving.");
+      const validatedRows = body.rows.flatMap((row) => {
+        const candidate = row && typeof row === "object" ? row as Record<string, unknown> : {};
+        const date = validMeetingDate(candidate["Week / meeting date"]);
+        const source = text(candidate["Source document"] || candidate["Add any relevant links or file names"]);
+        if (!date || !source) return [];
+        return normalizeRows([candidate], date, source, text(candidate["Meeting title"]) || "Imported meeting rows");
+      });
+      if (!validatedRows.length || validatedRows.length !== body.rows.length) return responseError("One or more rows failed validation. Review the rows again before saving.");
+      const result = await saveRows(validatedRows);
       return NextResponse.json({ ok: true, ...result }, { headers: { "Cache-Control": "no-store" } });
     }
 
@@ -235,13 +280,18 @@ export async function POST(request: Request) {
     const meetingDate = text(form.get("meetingDate"));
     const sourceLink = text(form.get("sourceLink"));
     if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".docx")) return responseError("Select a .docx Word document.");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(meetingDate)) return responseError("Choose the meeting or week date.");
-    if (!sourceLink || !/^https?:\/\//i.test(sourceLink)) return responseError("Add the Google Drive or source document link.");
+    if (file.size > MAX_UPLOAD_BYTES) return responseError("The Word document is larger than 10 MB.");
+    if (!validMeetingDate(meetingDate)) return responseError("Choose a valid meeting or week date.");
+    if (!sourceLink || sourceLink.length > MAX_SOURCE_LINK_LENGTH || !/^https?:\/\//i.test(sourceLink)) return responseError("Add a valid Google Drive or source document link.");
     const buffer = Buffer.from(await file.arrayBuffer());
     const extracted = await extractDocument(buffer);
-    const rows = await generateRows(extracted.formattedText, meetingDate, sourceLink, file.name);
+    const quota = await consumeAiImportQuota(request);
+    if (!quota.allowed) return NextResponse.json({ error: quota.message }, { status: quota.status, headers: { "Cache-Control": "no-store", ...(quota.retryAfterSeconds ? { "Retry-After": String(quota.retryAfterSeconds) } : {}) } });
+    const sourceBlocks = buildSourceBlocks(extracted.paragraphs);
+    const rows = await generateRows(sourceBlocks, meetingDate, sourceLink, file.name);
+    const coverage = coverageReport(sourceBlocks, rows.map((row) => ({ sourceBlockIds: row["Source block IDs"] })));
     if (!rows.length) return responseError("No meaningful meeting rows were found in the document.");
-    return NextResponse.json({ ok: true, fileName: file.name, meetingDate, sourceLink, extractedCharacterCount: extracted.rawText.length, rows }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ok: true, fileName: file.name, meetingDate, sourceLink, extractedCharacterCount: extracted.rawText.length, rows, coverage }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Document import failed", error);
     return responseError(error instanceof Error ? error.message : "Document import failed.", 500);

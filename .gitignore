@@ -6,6 +6,8 @@ out/
 *.tsbuildinfo
 .env*
 !.env.example
+output/
+tmp/
 
 # Contains source-authorized real student records; keep out of the public repository.
 supabase/import-real.mjs

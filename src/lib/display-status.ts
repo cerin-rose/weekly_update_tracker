@@ -4,5 +4,5 @@ export function getDisplayStatus(update: Pick<WeeklyUpdate, "status" | "question
   if (update.status === "blocked") return "blocked" as const;
   if (update.supportNeeded.trim()) return "needs-help" as const;
   if (update.questionForDrLina.trim()) return "question" as const;
-  return "on-track" as const;
+  return update.status;
 }
